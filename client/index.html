@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>Floral Studio - Quản Lý Đơn Hoa & Chi Phí Vốn</title>
+    <meta name="description" content="Phần mềm quản lý tiệm hoa: kiểm soát đơn hàng, lịch giao hoa theo giờ, công nợ tiền cọc và báo cáo doanh thu lợi nhuận tự động." />
+    <!-- SheetJS for Excel Export -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      // Chống zoom pinch & double-tap trên iOS Safari
+      document.addEventListener('gesturestart', function(e) { e.preventDefault(); }, { passive: false });
+      document.addEventListener('gesturechange', function(e) { e.preventDefault(); }, { passive: false });
+      document.addEventListener('gestureend', function(e) { e.preventDefault(); }, { passive: false });
+    </script>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

@@ -1,8 +1,8 @@
-// Auto-generated seed data from FlowOrder.xlsx
+// Cleaned data synced from 16_10_2026.xlsx
 window.INITIAL_ORDERS = [
   {
     "id": "DH-001",
-    "orderDate": "10/11/2026",
+    "orderDate": "11/10/2026",
     "customerName": "Khách vãng lai",
     "channel": "Instagram",
     "phone": "",
@@ -12,7 +12,7 @@ window.INITIAL_ORDERS = [
     "totalAmount": 250000,
     "depositAmount": 0,
     "remainingAmount": 0,
-    "deliveryDate": "10/11/2026",
+    "deliveryDate": "11/10/2026",
     "deliveryTime": "",
     "deliveryType": "Khách qua lấy",
     "status": "completed",
@@ -20,7 +20,7 @@ window.INITIAL_ORDERS = [
   },
   {
     "id": "DH-002",
-    "orderDate": "10/11/2026",
+    "orderDate": "11/10/2026",
     "customerName": "_amquynh",
     "channel": "Instagram",
     "phone": "0357600019",
@@ -34,11 +34,11 @@ window.INITIAL_ORDERS = [
     "deliveryTime": "",
     "deliveryType": "Khách qua lấy",
     "status": "completed",
-    "notes": "357600019"
+    "notes": ""
   },
   {
     "id": "DH-003",
-    "orderDate": "10/11/2026",
+    "orderDate": "11/10/2026",
     "customerName": "tú",
     "channel": "Zalo",
     "phone": "",
@@ -47,16 +47,16 @@ window.INITIAL_ORDERS = [
     "unitPrice": 250000,
     "totalAmount": 250000,
     "depositAmount": 30000,
-    "remainingAmount": 220000,
+    "remainingAmount": 0,
     "deliveryDate": "16/10/2026",
     "deliveryTime": "",
     "deliveryType": "Khách qua lấy",
-    "status": "pending",
+    "status": "completed",
     "notes": "add zalo"
   },
   {
     "id": "DH-004",
-    "orderDate": "10/11/2026",
+    "orderDate": "11/10/2026",
     "customerName": "long",
     "channel": "Zalo",
     "phone": "",
@@ -65,16 +65,16 @@ window.INITIAL_ORDERS = [
     "unitPrice": 250000,
     "totalAmount": 250000,
     "depositAmount": 0,
-    "remainingAmount": 250000,
+    "remainingAmount": 0,
     "deliveryDate": "16/10/2026",
     "deliveryTime": "",
     "deliveryType": "Khách qua lấy",
-    "status": "pending",
+    "status": "completed",
     "notes": "zl(chuc coc)"
   },
   {
     "id": "DH-005",
-    "orderDate": "10/11/2026",
+    "orderDate": "11/10/2026",
     "customerName": "đan(b kiều)",
     "channel": "Instagram",
     "phone": "",
@@ -92,7 +92,7 @@ window.INITIAL_ORDERS = [
   },
   {
     "id": "DH-006",
-    "orderDate": "10/11/2026",
+    "orderDate": "11/10/2026",
     "customerName": "tiến(b ki)",
     "channel": "Instagram",
     "phone": "",
@@ -110,9 +110,9 @@ window.INITIAL_ORDERS = [
   },
   {
     "id": "DH-007",
-    "orderDate": "10/12/2026",
+    "orderDate": "12/10/2026",
     "customerName": "ddaksjh",
-    "channel": "Điện thoại",
+    "channel": "Instagram",
     "phone": "0866575014",
     "productName": "bó mix",
     "quantity": 1,
@@ -120,17 +120,17 @@ window.INITIAL_ORDERS = [
     "totalAmount": 215000,
     "depositAmount": 0,
     "remainingAmount": 0,
-    "deliveryDate": "10/12/2026",
+    "deliveryDate": "12/10/2026",
     "deliveryTime": "",
     "deliveryType": "Khách qua lấy",
     "status": "completed",
-    "notes": "866575014"
+    "notes": ""
   },
   {
     "id": "DH-008",
-    "orderDate": "10/12/2026",
+    "orderDate": "12/10/2026",
     "customerName": "yên",
-    "channel": "Điện thoại",
+    "channel": "Instagram",
     "phone": "0815662816",
     "productName": "bó sophia",
     "quantity": 1,
@@ -138,15 +138,15 @@ window.INITIAL_ORDERS = [
     "totalAmount": 180000,
     "depositAmount": 0,
     "remainingAmount": 0,
-    "deliveryDate": "10/12/2026",
+    "deliveryDate": "12/10/2026",
     "deliveryTime": "",
     "deliveryType": "Khách qua lấy",
     "status": "completed",
-    "notes": "815662816"
+    "notes": ""
   },
   {
     "id": "DH-009",
-    "orderDate": "10/12/2026",
+    "orderDate": "12/10/2026",
     "customerName": "Hoàng Anh",
     "channel": "Instagram",
     "phone": "",
@@ -164,8 +164,8 @@ window.INITIAL_ORDERS = [
   },
   {
     "id": "DH-010",
-    "orderDate": "10/12/2026",
-    "customerName": "dominhvu",
+    "orderDate": "12/10/2026",
+    "customerName": "dominhvu(zl)",
     "channel": "Zalo",
     "phone": "0978200605",
     "productName": "plume hiền mix",
@@ -178,12 +178,12 @@ window.INITIAL_ORDERS = [
     "deliveryTime": "",
     "deliveryType": "Khách qua lấy",
     "status": "pending",
-    "notes": "978200605"
+    "notes": ""
   },
   {
     "id": "DH-011",
-    "orderDate": "10/12/2026",
-    "customerName": "Le Chinh",
+    "orderDate": "12/10/2026",
+    "customerName": "Le Chinh(zl)",
     "channel": "Zalo",
     "phone": "0372652509",
     "productName": "ly mix",
@@ -196,12 +196,12 @@ window.INITIAL_ORDERS = [
     "deliveryTime": "",
     "deliveryType": "Khách qua lấy",
     "status": "completed",
-    "notes": "372652509"
+    "notes": ""
   },
   {
     "id": "DH-012",
-    "orderDate": "10/12/2026",
-    "customerName": "Le Chinh",
+    "orderDate": "12/10/2026",
+    "customerName": "Le Chinh(zl)",
     "channel": "Zalo",
     "phone": "",
     "productName": "hồng mix",
@@ -218,8 +218,8 @@ window.INITIAL_ORDERS = [
   },
   {
     "id": "DH-013",
-    "orderDate": "10/12/2026",
-    "customerName": "Le Chinh",
+    "orderDate": "12/10/2026",
+    "customerName": "Le Chinh(zl)",
     "channel": "Zalo",
     "phone": "",
     "productName": "hồng mix+xanh mix",
@@ -236,27 +236,27 @@ window.INITIAL_ORDERS = [
   },
   {
     "id": "DH-014",
-    "orderDate": "10/12/2026",
-    "customerName": "Le Chinh",
+    "orderDate": "12/10/2026",
+    "customerName": "Le Chinh(zl)",
     "channel": "Zalo",
     "phone": "",
     "productName": "mix hồng",
-    "quantity": 1,
+    "quantity": 2,
     "unitPrice": 200000,
-    "totalAmount": 200000,
+    "totalAmount": 400000,
     "depositAmount": 100000,
-    "remainingAmount": 100000,
+    "remainingAmount": 0,
     "deliveryDate": "16/10/2026",
-    "deliveryTime": "12:00",
+    "deliveryTime": "11:30",
     "deliveryType": "Khách qua lấy",
-    "status": "pending",
+    "status": "completed",
     "notes": "trưa"
   },
   {
     "id": "DH-015",
     "orderDate": "13/10/2026",
     "customerName": "bin ji",
-    "channel": "Điện thoại",
+    "channel": "Instagram",
     "phone": "0364789899",
     "productName": "plume mix",
     "quantity": 1,
@@ -268,13 +268,13 @@ window.INITIAL_ORDERS = [
     "deliveryTime": "",
     "deliveryType": "Khách qua lấy",
     "status": "completed",
-    "notes": "364789899"
+    "notes": ""
   },
   {
     "id": "DH-016",
     "orderDate": "13/10/2026",
     "customerName": "hlinhgia",
-    "channel": "Điện thoại",
+    "channel": "Instagram",
     "phone": "0968606185",
     "productName": "ly mix",
     "quantity": 1,
@@ -286,7 +286,7 @@ window.INITIAL_ORDERS = [
     "deliveryTime": "",
     "deliveryType": "Khách qua lấy",
     "status": "completed",
-    "notes": "968606185"
+    "notes": ""
   },
   {
     "id": "DH-017",
@@ -299,11 +299,11 @@ window.INITIAL_ORDERS = [
     "unitPrice": 280000,
     "totalAmount": 280000,
     "depositAmount": 100000,
-    "remainingAmount": 180000,
+    "remainingAmount": 0,
     "deliveryDate": "16/10/2026",
-    "deliveryTime": "6h15",
+    "deliveryTime": "06:15",
     "deliveryType": "Khách qua lấy",
-    "status": "pending",
+    "status": "completed",
     "notes": "6h15"
   },
   {
@@ -328,7 +328,7 @@ window.INITIAL_ORDERS = [
     "id": "DH-019",
     "orderDate": "13/10/2026",
     "customerName": "minh long",
-    "channel": "Điện thoại",
+    "channel": "Instagram",
     "phone": "0973231109",
     "productName": "mix 2 bo( chưa bó,4h lấy)",
     "quantity": 2,
@@ -340,13 +340,13 @@ window.INITIAL_ORDERS = [
     "deliveryTime": "",
     "deliveryType": "Khách qua lấy",
     "status": "completed",
-    "notes": "973231109"
+    "notes": ""
   },
   {
     "id": "DH-020",
     "orderDate": "13/10/2026",
     "customerName": "vân",
-    "channel": "Điện thoại",
+    "channel": "Instagram",
     "phone": "0969393581",
     "productName": "plume(chưa bó, 6 r lấy",
     "quantity": 1,
@@ -358,7 +358,7 @@ window.INITIAL_ORDERS = [
     "deliveryTime": "",
     "deliveryType": "Khách qua lấy",
     "status": "completed",
-    "notes": "969393581"
+    "notes": ""
   },
   {
     "id": "DH-021",
@@ -502,7 +502,7 @@ window.INITIAL_ORDERS = [
     "deliveryTime": "",
     "deliveryType": "Khách qua lấy",
     "status": "pending",
-    "notes": ""
+    "notes": "zl"
   },
   {
     "id": "DH-029",
@@ -520,7 +520,7 @@ window.INITIAL_ORDERS = [
     "deliveryTime": "",
     "deliveryType": "Khách qua lấy",
     "status": "completed",
-    "notes": ""
+    "notes": "ig"
   },
   {
     "id": "DH-030",
@@ -679,7 +679,7 @@ window.INITIAL_ORDERS = [
     "depositAmount": 100000,
     "remainingAmount": 100000,
     "deliveryDate": "17/10/2026",
-    "deliveryTime": "16h",
+    "deliveryTime": "16:00",
     "deliveryType": "Khách qua lấy",
     "status": "pending",
     "notes": "16h"
@@ -713,12 +713,12 @@ window.INITIAL_ORDERS = [
     "unitPrice": 280000,
     "totalAmount": 280000,
     "depositAmount": 100000,
-    "remainingAmount": 180000,
+    "remainingAmount": 0,
     "deliveryDate": "16/10/2026",
-    "deliveryTime": "6r",
+    "deliveryTime": "",
     "deliveryType": "Khách qua lấy",
-    "status": "pending",
-    "notes": "6r"
+    "status": "completed",
+    "notes": "h"
   },
   {
     "id": "DH-041",
@@ -790,7 +790,7 @@ window.INITIAL_ORDERS = [
     "deliveryTime": "",
     "deliveryType": "Khách qua lấy",
     "status": "pending",
-    "notes": ""
+    "notes": "ig"
   },
   {
     "id": "DH-045",
@@ -821,11 +821,11 @@ window.INITIAL_ORDERS = [
     "unitPrice": 180000,
     "totalAmount": 180000,
     "depositAmount": 100000,
-    "remainingAmount": 80000,
+    "remainingAmount": 0,
     "deliveryDate": "16/10/2026",
-    "deliveryTime": "22h",
+    "deliveryTime": "22:00",
     "deliveryType": "Khách qua lấy",
-    "status": "pending",
+    "status": "completed",
     "notes": "22h"
   },
   {
@@ -965,11 +965,11 @@ window.INITIAL_ORDERS = [
     "unitPrice": 200000,
     "totalAmount": 200000,
     "depositAmount": 0,
-    "remainingAmount": 200000,
+    "remainingAmount": 0,
     "deliveryDate": "16/10/2026",
-    "deliveryTime": "2h",
+    "deliveryTime": "14:00",
     "deliveryType": "Khách qua lấy",
-    "status": "pending",
+    "status": "completed",
     "notes": "2h"
   },
   {
@@ -985,7 +985,7 @@ window.INITIAL_ORDERS = [
     "depositAmount": 150000,
     "remainingAmount": 250000,
     "deliveryDate": "17/10/2026",
-    "deliveryTime": "9h",
+    "deliveryTime": "09:00",
     "deliveryType": "Khách qua lấy",
     "status": "pending",
     "notes": "9h sáng"
@@ -996,17 +996,17 @@ window.INITIAL_ORDERS = [
     "customerName": "mngoc",
     "channel": "Instagram",
     "phone": "",
-    "productName": "ly mix nhỏ",
+    "productName": "blume mix",
     "quantity": 1,
-    "unitPrice": 180000,
-    "totalAmount": 180000,
+    "unitPrice": 200000,
+    "totalAmount": 200000,
     "depositAmount": 0,
-    "remainingAmount": 180000,
+    "remainingAmount": 200000,
     "deliveryDate": "17/10/2026",
-    "deliveryTime": "",
-    "deliveryType": "Khách qua lấy",
+    "deliveryTime": "08:00",
+    "deliveryType": "Giao hàng / Book ship",
     "status": "pending",
-    "notes": ""
+    "notes": "8h book ship"
   },
   {
     "id": "DH-057",
@@ -1019,11 +1019,11 @@ window.INITIAL_ORDERS = [
     "unitPrice": 300000,
     "totalAmount": 300000,
     "depositAmount": 100000,
-    "remainingAmount": 200000,
+    "remainingAmount": 0,
     "deliveryDate": "16/10/2026",
-    "deliveryTime": "6h",
+    "deliveryTime": "18:00",
     "deliveryType": "Khách qua lấy",
-    "status": "pending",
+    "status": "completed",
     "notes": "6h chiều lấy"
   },
   {
@@ -1047,7 +1047,7 @@ window.INITIAL_ORDERS = [
   {
     "id": "DH-059",
     "orderDate": "16/10/2026",
-    "customerName": "thu huyền",
+    "customerName": "thu huyền(ig)",
     "channel": "Instagram",
     "phone": "",
     "productName": "plume mix",
@@ -1057,8 +1057,8 @@ window.INITIAL_ORDERS = [
     "depositAmount": 100000,
     "remainingAmount": 0,
     "deliveryDate": "16/10/2026",
-    "deliveryTime": "9r",
-    "deliveryType": "Giao tận nơi / Ship",
+    "deliveryTime": "09:30",
+    "deliveryType": "Giao hàng / Book ship",
     "status": "completed",
     "notes": "book ship 9r"
   },
@@ -1066,19 +1066,127 @@ window.INITIAL_ORDERS = [
     "id": "DH-060",
     "orderDate": "16/10/2026",
     "customerName": "đức hiền",
+    "channel": "Zalo",
+    "phone": "",
+    "productName": "mixx",
+    "quantity": 2,
+    "unitPrice": 230000,
+    "totalAmount": 460000,
+    "depositAmount": 200000,
+    "remainingAmount": 260000,
+    "deliveryDate": "20/10/2026",
+    "deliveryTime": "",
+    "deliveryType": "Khách qua lấy",
+    "status": "pending",
+    "notes": "zalo"
+  },
+  {
+    "id": "DH-061",
+    "orderDate": "16/10/2026",
+    "customerName": "cuong",
     "channel": "Instagram",
     "phone": "",
-    "productName": "Bó hoa tươi theo yêu cầu",
-    "quantity": 3,
-    "unitPrice": 230000,
-    "totalAmount": 690000,
+    "productName": "blume san",
+    "quantity": 1,
+    "unitPrice": 200000,
+    "totalAmount": 200000,
     "depositAmount": 0,
-    "remainingAmount": 690000,
+    "remainingAmount": 0,
     "deliveryDate": "16/10/2026",
+    "deliveryTime": "",
+    "deliveryType": "Khách qua lấy",
+    "status": "completed",
+    "notes": "b hai"
+  },
+  {
+    "id": "DH-062",
+    "orderDate": "16/10/2026",
+    "customerName": "phuowng thao ig",
+    "channel": "Instagram",
+    "phone": "",
+    "productName": "blume san",
+    "quantity": 1,
+    "unitPrice": 250000,
+    "totalAmount": 250000,
+    "depositAmount": 0,
+    "remainingAmount": 0,
+    "deliveryDate": "16/10/2026",
+    "deliveryTime": "",
+    "deliveryType": "Khách qua lấy",
+    "status": "completed",
+    "notes": ""
+  },
+  {
+    "id": "DH-063",
+    "orderDate": "16/10/2026",
+    "customerName": "Tran Thị Quyên",
+    "channel": "Zalo",
+    "phone": "",
+    "productName": "cẩm ttus cầu",
+    "quantity": 1,
+    "unitPrice": 200000,
+    "totalAmount": 200000,
+    "depositAmount": 100000,
+    "remainingAmount": 100000,
+    "deliveryDate": "18/10/2026",
+    "deliveryTime": "",
+    "deliveryType": "Khách qua lấy",
+    "status": "pending",
+    "notes": "zl"
+  },
+  {
+    "id": "DH-064",
+    "orderDate": "16/10/2026",
+    "customerName": "giaa_huwngg",
+    "channel": "Instagram",
+    "phone": "",
+    "productName": "hồng mix",
+    "quantity": 1,
+    "unitPrice": 300000,
+    "totalAmount": 300000,
+    "depositAmount": 100000,
+    "remainingAmount": 200000,
+    "deliveryDate": "",
     "deliveryTime": "",
     "deliveryType": "Khách qua lấy",
     "status": "pending",
     "notes": ""
+  },
+  {
+    "id": "DH-065",
+    "orderDate": "16/10/2026",
+    "customerName": "changnhim._",
+    "channel": "Instagram",
+    "phone": "",
+    "productName": "sẵn",
+    "quantity": 1,
+    "unitPrice": 300000,
+    "totalAmount": 300000,
+    "depositAmount": 0,
+    "remainingAmount": 0,
+    "deliveryDate": "16/10/2026",
+    "deliveryTime": "",
+    "deliveryType": "Khách qua lấy",
+    "status": "completed",
+    "notes": ""
+  },
+  {
+    "id": "DH-066",
+    "orderDate": "16/10/2026",
+    "customerName": "trần thành",
+    "channel": "Zalo",
+    "phone": "",
+    "productName": "mix đậm",
+    "quantity": 1,
+    "unitPrice": 250000,
+    "totalAmount": 250000,
+    "depositAmount": 100000,
+    "remainingAmount": 150000,
+    "deliveryDate": "20/10/2026",
+    "deliveryTime": "",
+    "deliveryType": "Khách qua lấy",
+    "status": "pending",
+    "notes": "zl"
   }
 ];
 
@@ -1103,7 +1211,7 @@ window.INITIAL_EXPENSES = [
   },
   {
     "id": "EXP-003",
-    "date": "10/11/2026",
+    "date": "11/10/2026",
     "category": "Hoa tươi",
     "itemName": "hoa",
     "quantity": 1,
@@ -1112,7 +1220,7 @@ window.INITIAL_EXPENSES = [
   },
   {
     "id": "EXP-004",
-    "date": "10/11/2026",
+    "date": "11/10/2026",
     "category": "Hoa tươi",
     "itemName": "hoa đêm",
     "quantity": 1,
@@ -1121,7 +1229,7 @@ window.INITIAL_EXPENSES = [
   },
   {
     "id": "EXP-005",
-    "date": "10/12/2026",
+    "date": "12/10/2026",
     "category": "Hoa tươi",
     "itemName": "hoa sáng",
     "quantity": 1,
@@ -1130,7 +1238,7 @@ window.INITIAL_EXPENSES = [
   },
   {
     "id": "EXP-006",
-    "date": "10/12/2026",
+    "date": "12/10/2026",
     "category": "Phụ liệu & Bao bì",
     "itemName": "giấy xốp+túi",
     "quantity": 1,
@@ -1199,5 +1307,23 @@ window.INITIAL_EXPENSES = [
     "quantity": 1,
     "unitPrice": 580000,
     "totalCost": 580000
+  },
+  {
+    "id": "EXP-014",
+    "date": "16/10/2026",
+    "category": "Phụ liệu & Bao bì",
+    "itemName": "cốt",
+    "quantity": 1,
+    "unitPrice": 439000,
+    "totalCost": 439000
+  },
+  {
+    "id": "EXP-015",
+    "date": "16/10/2026",
+    "category": "Hoa tươi",
+    "itemName": "hoa phương",
+    "quantity": 1,
+    "unitPrice": 300000,
+    "totalCost": 300000
   }
 ];

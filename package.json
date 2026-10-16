@@ -1,0 +1,30 @@
+{
+  "name": "flowershop",
+  "version": "1.0.0",
+  "description": "Phần mềm quản lý tiệm hoa tối ưu cho dịp cao điểm lễ (đặc biệt ngày Phụ nữ Việt Nam 20/10), hỗ trợ thợ hoa kiểm soát đơn đặt trước, tiến độ cắm hoa theo khung giờ hẹn lấy, công nợ tiền cọc và báo cáo doanh thu - lợi nhuận tự động.",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run server\" \"npm run client\" --names \"API,UI\" --prefix-colors \"green,blue\"",
+    "server": "npm run dev --prefix server",
+    "client": "npm run dev --prefix client",
+    "start": "concurrently \"npm run start --prefix server\" \"npm run dev --prefix client\" --names \"API,UI\" --prefix-colors \"green,blue\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thinhtd2401/FlowerShop.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/thinhtd2401/FlowerShop/issues"
+  },
+  "homepage": "https://github.com/thinhtd2401/FlowerShop#readme",
+  "devDependencies": {
+    "concurrently": "^10.0.6"
+  },
+  "dependencies": {
+    "xlsx": "^0.18.5"
+  }
+}
