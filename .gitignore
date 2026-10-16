@@ -1,0 +1,12 @@
+# Excel temporary lock files
+~$*
+*.tmp
+*.log
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Editor directories
+.vscode/
+.idea/
