@@ -42,10 +42,16 @@ export function useOrders() {
     return updated;
   };
 
+  const updateImages = async (id, images) => {
+    const updated = await ordersApi.updateImages(id, images);
+    setOrders(prev => prev.map(o => o.id === id ? updated : o));
+    return updated;
+  };
+
   const deleteOrder = async (id) => {
     await ordersApi.delete(id);
     setOrders(prev => prev.filter(o => o.id !== id));
   };
 
-  return { orders, loading, error, fetchOrders, createOrder, updateOrder, updateStatus, deleteOrder };
+  return { orders, loading, error, fetchOrders, createOrder, updateOrder, updateStatus, updateImages, deleteOrder };
 }

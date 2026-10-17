@@ -67,5 +67,8 @@ if (!orderColumns.includes('recipient_name')) {
 if (!orderColumns.includes('recipient_phone')) {
   db.exec("ALTER TABLE orders ADD COLUMN recipient_phone TEXT DEFAULT ''");
 }
+if (!orderColumns.includes('images')) {
+  db.exec("ALTER TABLE orders ADD COLUMN images TEXT DEFAULT '[]'");
+}
 
 module.exports = db;

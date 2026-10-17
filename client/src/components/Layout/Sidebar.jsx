@@ -3,10 +3,11 @@
  */
 import { Flower2, LayoutDashboard, ShoppingBag, CalendarClock, Wallet } from 'lucide-react';
 
-export default function Sidebar({ currentView, onNavigate, pendingCount }) {
+export default function Sidebar({ currentView, onNavigate, totalOrdersCount, pendingCount }) {
+  const orderCount = totalOrdersCount ?? pendingCount ?? 0;
   const navItems = [
     { key: 'dashboard', icon: LayoutDashboard, label: 'Tổng quan' },
-    { key: 'orders', icon: ShoppingBag, label: 'Đơn hàng', badge: pendingCount > 0 ? pendingCount : null },
+    { key: 'orders', icon: ShoppingBag, label: 'Đơn hàng', badge: orderCount > 0 ? orderCount : null },
     { key: 'timeline', icon: CalendarClock, label: 'Tiến độ cắm hoa' },
     { key: 'expenses', icon: Wallet, label: 'Vốn & Chi phí' },
   ];

@@ -92,7 +92,7 @@ export default function Expenses({ expenses, onEditExpense, onDeleteExpense }) {
       {/* Mobile Cards */}
       <div className="mobile-only-cards" id="expensesMobileCards">
         {expenses.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)', background: '#fff', borderRadius: 12 }}>
+          <div style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)', background: 'var(--bg-surface)', border: '1px dashed var(--border-color)', borderRadius: 12 }}>
             Chưa có khoản chi phí nào
           </div>
         ) : expenses.map(e => {

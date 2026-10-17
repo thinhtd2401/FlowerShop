@@ -15,7 +15,15 @@ export const ordersApi = {
   create: (data) => api.post('/orders', data).then(r => r.data),
   update: (id, data) => api.put(`/orders/${id}`, data).then(r => r.data),
   updateStatus: (id, status) => api.patch(`/orders/${id}/status`, { status }).then(r => r.data),
+  updateImages: (id, images) => api.patch(`/orders/${id}/images`, { images }).then(r => r.data),
   delete: (id) => api.delete(`/orders/${id}`).then(r => r.data),
+};
+
+// Upload API
+export const uploadApi = {
+  uploadImages: (formData) => api.post('/upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }).then(r => r.data),
 };
 
 // Expenses API

@@ -103,8 +103,11 @@ export default function Dashboard({ onNavigate, refreshTrigger }) {
               <strong>{formatMoney(peakOct20Value)}</strong>. Hãy chuẩn bị sẵn hoa tươi và phụ liệu!</p>
           </div>
         </div>
-        <button className="btn btn-secondary btn-sm" onClick={() => onNavigate('timeline')}
-          style={{ borderColor: '#eab308', background: '#fff', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+        <button
+          className="peak-action-btn"
+          onClick={() => onNavigate('timeline')}
+          title="Xem lịch hẹn theo giờ"
+        >
           <span>Xem lịch hẹn theo giờ</span>
           <ArrowRight size={15} />
         </button>
@@ -363,7 +366,7 @@ export default function Dashboard({ onNavigate, refreshTrigger }) {
               );
             })}
           </div>
-          <div style={{ marginTop: 24, padding: 12, background: 'var(--bg-app)', borderRadius: 8, fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.5, display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+          <div style={{ marginTop: 24, padding: 12, background: 'var(--bg-app)', border: '1px solid var(--border-color)', borderRadius: 8, fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.5, display: 'flex', gap: 8, alignItems: 'flex-start' }}>
             <Sparkles size={16} color="var(--primary)" style={{ flexShrink: 0, marginTop: 2 }} />
             <div>
               <strong>Gợi ý kinh doanh:</strong> Khách đặt qua Instagram chiếm đa số. Nên chuẩn bị sẵn ảnh chụp các mẫu hoa đã cắm xong để đăng story tương tác trước ngày 20/10!

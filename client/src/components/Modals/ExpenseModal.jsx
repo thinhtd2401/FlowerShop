@@ -102,7 +102,7 @@ export default function ExpenseModal({ isOpen, expense, onClose, onSave }) {
   if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay active" id="expenseModal" onClick={(e) => e.target === e.currentTarget && onClose()}>
+    <div className="modal-overlay active" id="expenseModal">
       <div className="modal-content" style={{ maxWidth: 500 }}>
         <div className="modal-header">
           <h3 style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -188,18 +188,9 @@ export default function ExpenseModal({ isOpen, expense, onClose, onSave }) {
             </div>
 
             {/* Total Cost live preview */}
-            <div style={{
-              background: '#fef3c7',
-              border: '1px solid #fde68a',
-              padding: '10px 14px',
-              borderRadius: 8,
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: 14
-            }}>
-              <span style={{ fontSize: 13, fontWeight: 600, color: '#92400e' }}>Tổng Tiền Chi Vốn:</span>
-              <strong style={{ fontSize: 16, color: '#b45309' }}>{formatMoney(totalCost)}</strong>
+            <div className="expense-total-preview">
+              <span>Tổng Tiền Chi Vốn:</span>
+              <strong>{formatMoney(totalCost)}</strong>
             </div>
 
             {/* Expense Date & Quick shortcuts */}

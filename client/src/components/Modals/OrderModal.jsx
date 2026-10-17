@@ -1,10 +1,16 @@
 /**
  * components/Modals/OrderModal.jsx - Tạo & Quản lý đơn hàng hoa hoàn chỉnh
  */
-import { useState, useEffect } from 'react';
-import { Flower2, X, Sparkles, Clock, Truck, Store, Printer, CreditCard, MessageSquare, MapPin, UserCheck, Calendar, Flame } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import {
+  Flower2, X, Sparkles, Clock, Truck, Store, Printer, CreditCard,
+  MessageSquare, MapPin, UserCheck, Calendar, Flame, Camera, Upload,
+  Trash2, Loader2, Image as ImageIcon
+} from 'lucide-react';
 import { formatMoney } from '../../utils/format';
 import DatePicker from '../UI/DatePicker';
+import { uploadApi } from '../../api';
+import { compressImages } from '../../utils/imageCompressor';
 
 const FLOWER_PRESETS = [
   { name: 'Mix nhạt tone pastel', price: 250000 },
@@ -70,7 +76,7 @@ const DEFAULT_FORM = {
   productName: '',
   quantity: 1,
   unitPrice: 250000,
-  depositAmount: 100000,
+  depositAmount: 0,
   orderDate: '',
   deliveryDate: '20/10/2026',
   deliveryTime: '10:00',
@@ -79,28 +85,74 @@ const DEFAULT_FORM = {
   recipientName: '',
   recipientPhone: '',
   cardMessage: '',
-  notes: ''
+  notes: '',
+  images: []
 };
 
 export default function OrderModal({ isOpen, order, onClose, onSave }) {
   const [form, setForm] = useState(DEFAULT_FORM);
   const [showPrintTag, setShowPrintTag] = useState(false);
   const [timeSession, setTimeSession] = useState('all');
+  const [isUploadingImages, setIsUploadingImages] = useState(false);
   const isEditing = !!order;
+
+  const cameraInputRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     if (order) {
-      setForm({ ...DEFAULT_FORM, ...order });
+      setForm({ ...DEFAULT_FORM, ...order, images: order.images || [] });
     } else {
       const today = new Date().toLocaleDateString('vi-VN');
       setForm({
         ...DEFAULT_FORM,
         orderDate: today,
         deliveryDate: '20/10/2026',
+        images: []
       });
     }
     setShowPrintTag(false);
   }, [order, isOpen]);
+
+  const handleImageUpload = async (e) => {
+    e.stopPropagation();
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    try {
+      setIsUploadingImages(true);
+      const compressedFiles = await compressImages(files, {
+        maxWidth: 1600,
+        maxHeight: 1600,
+        quality: 0.85
+      });
+      const formData = new FormData();
+      compressedFiles.forEach(file => {
+        formData.append('images', file);
+      });
+      const res = await uploadApi.uploadImages(formData);
+      if (res.success && res.urls && res.urls.length > 0) {
+        setForm(prev => ({
+          ...prev,
+          images: [...(prev.images || []), ...res.urls]
+        }));
+      }
+    } catch (err) {
+      console.error('Lỗi upload ảnh:', err);
+      alert('Tải ảnh thất bại: ' + (err.message || 'Lỗi tải ảnh'));
+    } finally {
+      setIsUploadingImages(false);
+      try {
+        if (e.target) e.target.value = '';
+      } catch {}
+    }
+  };
+
+  const handleRemoveImage = (indexToRemove) => {
+    setForm(prev => ({
+      ...prev,
+      images: (prev.images || []).filter((_, idx) => idx !== indexToRemove)
+    }));
+  };
 
   // Khóa cuộn nền (background scroll lock) khi mở modal trên mobile & desktop
   useEffect(() => {
@@ -179,7 +231,7 @@ export default function OrderModal({ isOpen, order, onClose, onSave }) {
   if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay active" id="orderModal" onClick={(e) => e.target === e.currentTarget && onClose()}>
+    <div className="modal-overlay active" id="orderModal">
       <div className="modal-content" style={{ maxWidth: 640 }}>
         {/* Header */}
         <div className="modal-header">
@@ -338,6 +390,161 @@ export default function OrderModal({ isOpen, order, onClose, onSave }) {
                   </span>
                 ))}
               </div>
+            </div>
+
+            {/* Ảnh mẫu tham chiếu (Reference Photos) - Ngay dưới Mẫu hoa */}
+            <div className="form-group" style={{ marginBottom: 18 }}>
+              <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700 }}>
+                  <Camera size={15} color="var(--primary)" />
+                  <span>Ảnh Tham Chiếu Mẫu Hoa</span>
+                </span>
+                {form.images?.length > 0 && (
+                  <span style={{ fontSize: 12, color: 'var(--primary)', fontWeight: 600 }}>
+                    {form.images.length} ảnh đã chọn
+                  </span>
+                )}
+              </label>
+              <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 10, lineHeight: 1.4 }}>
+                Tải ảnh mẫu khách yêu cầu hoặc chụp trực tiếp hoa tại tiệm (không bắt buộc, có thể thêm nhiều ảnh).
+              </p>
+
+              {/* Action buttons with native label activation */}
+              <div className="order-photo-actions" style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+                <label
+                  htmlFor="orderCameraCaptureInput"
+                  className="btn btn-secondary"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    flex: '1 1 calc(50% - 4px)',
+                    justifyContent: 'center',
+                    cursor: isUploadingImages ? 'not-allowed' : 'pointer',
+                    opacity: isUploadingImages ? 0.6 : 1,
+                    margin: 0,
+                    touchAction: 'manipulation',
+                    userSelect: 'none'
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Camera size={16} />
+                  <span>Chụp Ảnh Bằng Điện Thoại</span>
+                  <input
+                    id="orderCameraCaptureInput"
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    style={{
+                      position: 'absolute',
+                      width: '1px',
+                      height: '1px',
+                      padding: 0,
+                      margin: '-1px',
+                      overflow: 'hidden',
+                      clip: 'rect(0, 0, 0, 0)',
+                      whiteSpace: 'nowrap',
+                      border: 0,
+                      opacity: 0,
+                      pointerEvents: 'none'
+                    }}
+                    disabled={isUploadingImages}
+                    onChange={handleImageUpload}
+                  />
+                </label>
+
+                <label
+                  htmlFor="orderLibraryUploadInput"
+                  className="btn btn-secondary"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    flex: '1 1 calc(50% - 4px)',
+                    justifyContent: 'center',
+                    cursor: isUploadingImages ? 'not-allowed' : 'pointer',
+                    opacity: isUploadingImages ? 0.6 : 1,
+                    margin: 0,
+                    touchAction: 'manipulation',
+                    userSelect: 'none'
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Upload size={16} />
+                  <span>Chọn Từ Thư Viện / Máy</span>
+                  <input
+                    id="orderLibraryUploadInput"
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    style={{
+                      position: 'absolute',
+                      width: '1px',
+                      height: '1px',
+                      padding: 0,
+                      margin: '-1px',
+                      overflow: 'hidden',
+                      clip: 'rect(0, 0, 0, 0)',
+                      whiteSpace: 'nowrap',
+                      border: 0,
+                      opacity: 0,
+                      pointerEvents: 'none'
+                    }}
+                    disabled={isUploadingImages}
+                    onChange={handleImageUpload}
+                  />
+                </label>
+              </div>
+
+              {/* Uploading progress banner */}
+              {isUploadingImages && (
+                <div style={{
+                  padding: '10px 14px',
+                  background: 'var(--bg-muted)',
+                  borderRadius: 8,
+                  fontSize: 12.5,
+                  color: 'var(--primary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  marginBottom: 10
+                }}>
+                  <Loader2 size={16} className="animate-spin" />
+                  <span>Đang nén và tải ảnh lên hệ thống...</span>
+                </div>
+              )}
+
+              {/* Uploaded Photos Grid */}
+              {form.images && form.images.length > 0 ? (
+                <div className="order-photo-grid">
+                  {form.images.map((url, idx) => (
+                    <div key={`${url}-${idx}`} className="order-photo-item">
+                      <img src={url} alt={`Mẫu hoa ${idx + 1}`} />
+                      {idx === 0 && <span className="photo-primary-badge">Ảnh chính</span>}
+                      <button
+                        type="button"
+                        className="photo-delete-btn"
+                        title="Xóa ảnh này"
+                        onClick={() => handleRemoveImage(idx)}
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{
+                  padding: '14px 16px',
+                  border: '1px dashed var(--border-color)',
+                  borderRadius: 8,
+                  textAlign: 'center',
+                  color: 'var(--text-muted)',
+                  fontSize: 12.5,
+                  background: 'var(--bg-app)'
+                }}>
+                  Chưa có ảnh nào được tải lên cho mẫu hoa này
+                </div>
+              )}
             </div>
 
             {/* Row 4: Số lượng & Đơn giá */}

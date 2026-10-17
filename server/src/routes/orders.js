@@ -5,6 +5,18 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db/database');
 
+// Helper: safely parse JSON images array
+function parseImages(imagesVal) {
+  if (!imagesVal) return [];
+  if (Array.isArray(imagesVal)) return imagesVal;
+  try {
+    const parsed = JSON.parse(imagesVal);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
 // Helper: map DB row (snake_case) to camelCase
 function rowToOrder(row) {
   if (!row) return null;
@@ -29,6 +41,7 @@ function rowToOrder(row) {
     recipientPhone: row.recipient_phone || '',
     status: row.status,
     notes: row.notes,
+    images: parseImages(row.images),
     createdAt: row.created_at
   };
 }
@@ -71,14 +84,15 @@ router.post('/', (req, res) => {
     const remainingAmount = Math.max(0, totalAmount - depositAmount);
 
     const today = new Date().toLocaleDateString('vi-VN');
+    const imagesJson = JSON.stringify(parseImages(data.images));
 
     db.prepare(`
       INSERT INTO orders (
         id, order_date, customer_name, channel, phone, product_name,
         quantity, unit_price, total_amount, deposit_amount, remaining_amount,
         delivery_date, delivery_time, delivery_type, delivery_address,
-        card_message, recipient_name, recipient_phone, status, notes
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        card_message, recipient_name, recipient_phone, status, notes, images
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       newId,
       data.orderDate || today,
@@ -99,7 +113,8 @@ router.post('/', (req, res) => {
       (data.recipientName || '').trim(),
       (data.recipientPhone || '').trim(),
       data.status || 'pending',
-      (data.notes || '').trim()
+      (data.notes || '').trim(),
+      imagesJson
     );
 
     const newRow = db.prepare('SELECT * FROM orders WHERE id = ?').get(newId);
@@ -122,6 +137,7 @@ router.put('/:id', (req, res) => {
     const totalAmount = quantity * unitPrice;
     const depositAmount = parseInt(data.depositAmount ?? existing.deposit_amount) || 0;
     const remainingAmount = Math.max(0, totalAmount - depositAmount);
+    const imagesJson = JSON.stringify(parseImages(data.images !== undefined ? data.images : existing.images));
 
     db.prepare(`
       UPDATE orders SET
@@ -130,7 +146,7 @@ router.put('/:id', (req, res) => {
         deposit_amount = ?, remaining_amount = ?, delivery_date = ?,
         delivery_time = ?, delivery_type = ?, delivery_address = ?,
         card_message = ?, recipient_name = ?, recipient_phone = ?,
-        status = ?, notes = ?
+        status = ?, notes = ?, images = ?
       WHERE id = ?
     `).run(
       (data.orderDate ?? existing.order_date),
@@ -148,8 +164,27 @@ router.put('/:id', (req, res) => {
       ((data.recipientPhone ?? existing.recipient_phone) || '').trim(),
       (data.status ?? existing.status),
       ((data.notes ?? existing.notes) || '').trim(),
+      imagesJson,
       id
     );
+
+    const updated = db.prepare('SELECT * FROM orders WHERE id = ?').get(id);
+    res.json(rowToOrder(updated));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PATCH /api/orders/:id/images - Cập nhật riêng danh sách ảnh
+router.patch('/:id/images', (req, res) => {
+  try {
+    const { id } = req.params;
+    const { images } = req.body;
+    const existing = db.prepare('SELECT * FROM orders WHERE id = ?').get(id);
+    if (!existing) return res.status(404).json({ error: 'Không tìm thấy đơn hàng' });
+
+    const imagesJson = JSON.stringify(parseImages(images));
+    db.prepare('UPDATE orders SET images = ? WHERE id = ?').run(imagesJson, id);
 
     const updated = db.prepare('SELECT * FROM orders WHERE id = ?').get(id);
     res.json(rowToOrder(updated));

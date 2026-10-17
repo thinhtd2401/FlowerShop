@@ -35,11 +35,20 @@ const STATUS_LABELS = {
   cancelled: 'Đã hủy'
 };
 
-export default function Orders({ orders, searchQuery, onEditOrder, onUpdateStatus, onDeleteOrder }) {
+function getTodayDMY() {
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
+}
+
+export default function Orders({ orders, searchQuery, onEditOrder, onUpdateStatus, onDeleteOrder, onOpenGallery }) {
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterDate, setFilterDate] = useState('all');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+
+  const todayStr = useMemo(() => getTodayDMY(), []);
+  const todayShort = todayStr.slice(0, 5);
 
   const filteredOrders = useMemo(() => {
     return orders.filter(o => {
@@ -59,7 +68,7 @@ export default function Orders({ orders, searchQuery, onEditOrder, onUpdateStatu
         }
       } else {
         // Preset Quick Date filters
-        if (filterDate === 'oct16' && !(o.deliveryDate || '').includes('16/10')) return false;
+        if (filterDate === 'today' && !(o.deliveryDate || '').includes(todayShort)) return false;
         if (filterDate === 'oct20' && !(o.deliveryDate || '').includes('20/10')) return false;
         if (filterDate === 'has_remain' && (o.remainingAmount || 0) <= 0) return false;
       }
@@ -76,7 +85,7 @@ export default function Orders({ orders, searchQuery, onEditOrder, onUpdateStatu
       }
       return true;
     });
-  }, [orders, filterStatus, filterDate, startDate, endDate, searchQuery]);
+  }, [orders, filterStatus, filterDate, startDate, endDate, searchQuery, todayShort]);
 
   // Tab counts based on all orders
   const counts = useMemo(() => ({
@@ -159,13 +168,13 @@ export default function Orders({ orders, searchQuery, onEditOrder, onUpdateStatu
               Tất cả ngày
             </button>
             <button
-              className={`date-pill ${filterDate === 'oct16' ? 'active' : ''}`}
+              className={`date-pill ${filterDate === 'today' ? 'active' : ''}`}
               onClick={() => {
-                setFilterDate('oct16');
+                setFilterDate('today');
                 setStartDate('');
                 setEndDate('');
               }}>
-              Hôm nay (16/10)
+              Hôm nay ({todayShort})
             </button>
             <button
               className={`date-pill ${filterDate === 'oct20' ? 'active' : ''}`}
@@ -360,24 +369,40 @@ export default function Orders({ orders, searchQuery, onEditOrder, onUpdateStatu
                     <span style={{ fontSize: 11, background: 'var(--bg-muted)', padding: '1px 6px', borderRadius: 10, marginTop: 2, display: 'inline-block' }}>{o.channel}</span>
                   </td>
                   <td>
-                    <strong>{o.productName}</strong>
-                    {o.unitPrice > 0 && (
-                      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>
-                        Đơn giá: {formatMoney(o.unitPrice)}
+                    <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                      {o.images && o.images.length > 0 && (
+                        <div
+                          className="orders-table-thumb"
+                          onClick={() => onOpenGallery && onOpenGallery({ order: o, initialIndex: 0 })}
+                          title={`Xem ${o.images.length} ảnh mẫu hoa`}
+                        >
+                          <img src={o.images[0]} alt={o.productName} />
+                          {o.images.length > 1 && (
+                            <span className="orders-table-thumb-badge">+{o.images.length - 1}</span>
+                          )}
+                        </div>
+                      )}
+                      <div style={{ flex: 1 }}>
+                        <strong>{o.productName}</strong>
+                        {o.unitPrice > 0 && (
+                          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>
+                            Đơn giá: {formatMoney(o.unitPrice)}
+                          </div>
+                        )}
+                        {o.notes && (
+                          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <FileText size={11} />
+                            <span>{o.notes}</span>
+                          </div>
+                        )}
+                        {o.cardMessage && (
+                          <div style={{ fontSize: 11, color: 'var(--primary)', marginTop: 2, display: 'flex', alignItems: 'center', gap: 4, fontStyle: 'italic' }}>
+                            <MessageSquare size={11} />
+                            <span>Thiệp: {o.cardMessage}</span>
+                          </div>
+                        )}
                       </div>
-                    )}
-                    {o.notes && (
-                      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <FileText size={11} />
-                        <span>{o.notes}</span>
-                      </div>
-                    )}
-                    {o.cardMessage && (
-                      <div style={{ fontSize: 11, color: 'var(--primary)', marginTop: 2, display: 'flex', alignItems: 'center', gap: 4, fontStyle: 'italic' }}>
-                        <MessageSquare size={11} />
-                        <span>Thiệp: {o.cardMessage}</span>
-                      </div>
-                    )}
+                    </div>
                   </td>
                   <td style={{ textAlign: 'center' }}>
                     <span className="order-qty-tag">
@@ -447,7 +472,7 @@ export default function Orders({ orders, searchQuery, onEditOrder, onUpdateStatu
       {/* Mobile Cards */}
       <div className="mobile-only-cards" id="ordersMobileCards">
         {filteredOrders.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)', background: '#fff', borderRadius: 12 }}>
+          <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)', background: 'var(--bg-surface)', border: '1px dashed var(--border-color)', borderRadius: 12 }}>
             Không tìm thấy đơn hàng nào
           </div>
         ) : filteredOrders.map((o, index) => {
@@ -494,20 +519,36 @@ export default function Orders({ orders, searchQuery, onEditOrder, onUpdateStatu
 
               {/* Product, Quantity & notes */}
               <div style={{ background: 'var(--bg-app)', padding: '8px 10px', borderRadius: 8, fontSize: 13 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-                  <div style={{ fontWeight: 600, color: 'var(--text-main)' }}>
-                    {o.productName}
+                <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                  {o.images && o.images.length > 0 && (
+                    <div
+                      className="orders-mobile-thumb"
+                      onClick={() => onOpenGallery && onOpenGallery({ order: o, initialIndex: 0 })}
+                      title={`Xem ${o.images.length} ảnh mẫu hoa`}
+                    >
+                      <img src={o.images[0]} alt={o.productName} />
+                      {o.images.length > 1 && (
+                        <span className="orders-table-thumb-badge">+{o.images.length - 1}</span>
+                      )}
+                    </div>
+                  )}
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                      <div style={{ fontWeight: 600, color: 'var(--text-main)' }}>
+                        {o.productName}
+                      </div>
+                      <span className="mobile-qty-badge">
+                        <Package size={11} />
+                        <span>SL: {qty}</span>
+                      </span>
+                    </div>
+                    {o.unitPrice > 0 && (
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+                        Đơn giá: {formatMoney(o.unitPrice)}
+                      </div>
+                    )}
                   </div>
-                  <span className="mobile-qty-badge">
-                    <Package size={11} />
-                    <span>SL: {qty}</span>
-                  </span>
                 </div>
-                {o.unitPrice > 0 && (
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
-                    Đơn giá: {formatMoney(o.unitPrice)}
-                  </div>
-                )}
                 {o.notes && (
                   <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 4, display: 'flex', alignItems: 'flex-start', gap: 4 }}>
                     <FileText size={12} style={{ flexShrink: 0, marginTop: 2 }} />
