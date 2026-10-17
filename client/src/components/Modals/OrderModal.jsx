@@ -217,13 +217,17 @@ export default function OrderModal({ isOpen, order, onClose, onSave }) {
       alert('Vui lòng nhập mẫu hoa hoặc sản phẩm!');
       return;
     }
+    const isCompleted = form.status === 'completed';
+    const finalDeposit = isCompleted ? totalAmount : depositAmount;
+    const finalRemaining = isCompleted ? 0 : remainingAmount;
+
     await onSave({
       ...form,
       quantity,
       unitPrice,
       totalAmount,
-      depositAmount,
-      remainingAmount,
+      depositAmount: finalDeposit,
+      remainingAmount: finalRemaining,
     });
     onClose();
   }
@@ -353,7 +357,18 @@ export default function OrderModal({ isOpen, order, onClose, onSave }) {
               </div>
               <div className="form-group">
                 <label>Trạng Thái Đơn</label>
-                <select id="orderStatusSelect" value={form.status} onChange={e => set('status', e.target.value)}>
+                <select
+                  id="orderStatusSelect"
+                  value={form.status}
+                  onChange={e => {
+                    const nextStatus = e.target.value;
+                    if (nextStatus === 'completed') {
+                      setForm(prev => ({ ...prev, status: nextStatus, depositAmount: totalAmount }));
+                    } else {
+                      set('status', nextStatus);
+                    }
+                  }}
+                >
                   <option value="pending">Chờ cắm hoa</option>
                   <option value="ready">Đã bó xong</option>
                   <option value="completed">Đã giao (Thu đủ)</option>

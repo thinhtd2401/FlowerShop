@@ -16,21 +16,21 @@ router.get('/', (req, res) => {
     // Capital
     const totalCapital = expenses.reduce((sum, e) => sum + (e.total_cost || 0), 0);
 
-    // Revenue
+    // Revenue (chỉ tính đơn hiệu lực không hủy)
     const totalPotentialRevenue = activeOrders.reduce((sum, o) => sum + (o.total_amount || 0), 0);
-    const deliveredRevenue = orders
+    const deliveredRevenue = activeOrders
       .filter(o => o.status === 'completed')
       .reduce((sum, o) => sum + (o.total_amount || 0), 0);
 
-    // Cash collected
-    const actualCollectedCash = orders.reduce((sum, o) => {
+    // Cash collected (chỉ tính đơn hiệu lực)
+    const actualCollectedCash = activeOrders.reduce((sum, o) => {
       if (o.status === 'completed') return sum + o.total_amount;
       if (o.status === 'pending' || o.status === 'ready') return sum + (o.deposit_amount || 0);
       return sum;
     }, 0);
 
-    // Pending orders metrics
-    const pendingOrders = orders.filter(o => o.status === 'pending' || o.status === 'ready');
+    // Pending orders metrics (chỉ tính đơn hiệu lực)
+    const pendingOrders = activeOrders.filter(o => o.status === 'pending' || o.status === 'ready');
     const pendingDeposit = pendingOrders.reduce((sum, o) => sum + (o.deposit_amount || 0), 0);
     const pendingRevenue = pendingOrders.reduce((sum, o) => sum + (o.total_amount || 0), 0);
     const pendingCollection = pendingOrders.reduce((sum, o) => sum + (o.remaining_amount || 0), 0);
@@ -39,12 +39,13 @@ router.get('/', (req, res) => {
     const profit = actualCollectedCash - totalCapital;
     const expectedProfit = totalPotentialRevenue - totalCapital;
 
-    // Status counts
+    // Status counts (all chỉ tính đơn có hiệu lực)
     const statusCounts = {
-      all: orders.length,
-      pending: orders.filter(o => o.status === 'pending').length,
-      ready: orders.filter(o => o.status === 'ready').length,
-      completed: orders.filter(o => o.status === 'completed').length,
+      all: activeOrders.length,
+      totalAll: orders.length,
+      pending: activeOrders.filter(o => o.status === 'pending').length,
+      ready: activeOrders.filter(o => o.status === 'ready').length,
+      completed: activeOrders.filter(o => o.status === 'completed').length,
       cancelled: orders.filter(o => o.status === 'cancelled').length
     };
 
@@ -71,8 +72,8 @@ router.get('/', (req, res) => {
       channelMap[c] = (channelMap[c] || 0) + 1;
     });
 
-    // Recent orders (last 10)
-    const recentOrders = orders
+    // Recent orders (last 10 active)
+    const recentOrders = activeOrders
       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
       .slice(0, 10)
       .map(o => ({

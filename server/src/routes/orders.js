@@ -80,8 +80,10 @@ router.post('/', (req, res) => {
     const quantity = parseInt(data.quantity) || 1;
     const unitPrice = parseInt(data.unitPrice) || 0;
     const totalAmount = quantity * unitPrice;
-    const depositAmount = parseInt(data.depositAmount) || 0;
-    const remainingAmount = Math.max(0, totalAmount - depositAmount);
+    const status = data.status || 'pending';
+    const isCompleted = status === 'completed';
+    const depositAmount = isCompleted ? totalAmount : (parseInt(data.depositAmount) || 0);
+    const remainingAmount = isCompleted ? 0 : Math.max(0, totalAmount - depositAmount);
 
     const today = new Date().toLocaleDateString('vi-VN');
     const imagesJson = JSON.stringify(parseImages(data.images));
@@ -112,7 +114,7 @@ router.post('/', (req, res) => {
       (data.cardMessage || '').trim(),
       (data.recipientName || '').trim(),
       (data.recipientPhone || '').trim(),
-      data.status || 'pending',
+      status,
       (data.notes || '').trim(),
       imagesJson
     );
@@ -132,11 +134,13 @@ router.put('/:id', (req, res) => {
     if (!existing) return res.status(404).json({ error: 'Không tìm thấy đơn hàng' });
 
     const data = req.body;
+    const status = data.status ?? existing.status;
     const quantity = parseInt(data.quantity ?? existing.quantity) || 1;
     const unitPrice = parseInt(data.unitPrice ?? existing.unit_price) || 0;
     const totalAmount = quantity * unitPrice;
-    const depositAmount = parseInt(data.depositAmount ?? existing.deposit_amount) || 0;
-    const remainingAmount = Math.max(0, totalAmount - depositAmount);
+    const isCompleted = status === 'completed';
+    const depositAmount = isCompleted ? totalAmount : (parseInt(data.depositAmount ?? existing.deposit_amount) || 0);
+    const remainingAmount = isCompleted ? 0 : Math.max(0, totalAmount - depositAmount);
     const imagesJson = JSON.stringify(parseImages(data.images !== undefined ? data.images : existing.images));
 
     db.prepare(`
@@ -162,7 +166,7 @@ router.put('/:id', (req, res) => {
       ((data.cardMessage ?? existing.card_message) || '').trim(),
       ((data.recipientName ?? existing.recipient_name) || '').trim(),
       ((data.recipientPhone ?? existing.recipient_phone) || '').trim(),
-      (data.status ?? existing.status),
+      status,
       ((data.notes ?? existing.notes) || '').trim(),
       imagesJson,
       id
@@ -201,9 +205,12 @@ router.patch('/:id/status', (req, res) => {
     const existing = db.prepare('SELECT * FROM orders WHERE id = ?').get(id);
     if (!existing) return res.status(404).json({ error: 'Không tìm thấy đơn hàng' });
 
-    // If completed, set remaining = 0
-    const remaining = status === 'completed' ? 0 : existing.remaining_amount;
-    db.prepare('UPDATE orders SET status = ?, remaining_amount = ? WHERE id = ?').run(status, remaining, id);
+    // Khi chuyển sang completed: tự động đưa remaining = 0 và deposit_amount = total_amount
+    if (status === 'completed') {
+      db.prepare('UPDATE orders SET status = ?, deposit_amount = total_amount, remaining_amount = 0 WHERE id = ?').run(status, id);
+    } else {
+      db.prepare('UPDATE orders SET status = ? WHERE id = ?').run(status, id);
+    }
 
     const updated = db.prepare('SELECT * FROM orders WHERE id = ?').get(id);
     res.json(rowToOrder(updated));

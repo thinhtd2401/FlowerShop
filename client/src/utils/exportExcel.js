@@ -12,16 +12,19 @@ export function exportToExcel(orders = [], expenses = []) {
   const dateStr = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}`;
   const displayTime = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
 
-  // 1. Calculations for General Statistics
-  const totalRevenue = orders.reduce((sum, o) => sum + (parseInt(o.totalAmount, 10) || 0), 0);
-  const totalDeposit = orders.reduce((sum, o) => sum + (parseInt(o.depositAmount, 10) || 0), 0);
-  const totalRemaining = orders.reduce((sum, o) => sum + (parseInt(o.remainingAmount, 10) || 0), 0);
+  const activeOrders = orders.filter(o => o.status !== 'cancelled');
+  const cancelledOrders = orders.filter(o => o.status === 'cancelled');
+
+  // 1. Calculations for General Statistics (loại trừ đơn hủy)
+  const totalRevenue = activeOrders.reduce((sum, o) => sum + (parseInt(o.totalAmount, 10) || 0), 0);
+  const totalDeposit = activeOrders.reduce((sum, o) => sum + (parseInt(o.depositAmount, 10) || 0), 0);
+  const totalRemaining = activeOrders.reduce((sum, o) => sum + (parseInt(o.remainingAmount, 10) || 0), 0);
   const totalExpenses = expenses.reduce((sum, e) => sum + (parseInt(e.amount, 10) || 0), 0);
 
-  const completedOrders = orders.filter(o => o.status === 'completed');
-  const pendingOrders = orders.filter(o => o.status !== 'completed' && o.status !== 'cancelled');
-  const peakOrders = orders.filter(o => (o.deliveryDate || '').includes('20/10'));
-  const totalBouquets = orders.reduce((sum, o) => sum + (parseInt(o.quantity, 10) || 1), 0);
+  const completedOrders = activeOrders.filter(o => o.status === 'completed');
+  const pendingOrders = activeOrders.filter(o => o.status !== 'completed');
+  const peakOrders = activeOrders.filter(o => (o.deliveryDate || '').includes('20/10'));
+  const totalBouquets = activeOrders.reduce((sum, o) => sum + (parseInt(o.quantity, 10) || 1), 0);
 
   // Cash in wallet: 100% of completed + deposits of pending
   const cashInWallet = completedOrders.reduce((sum, o) => sum + (parseInt(o.totalAmount, 10) || 0), 0) +
@@ -30,9 +33,9 @@ export function exportToExcel(orders = [], expenses = []) {
   const projectedTotalProfit = totalRevenue - totalExpenses;
   const marginPct = totalRevenue > 0 ? ((projectedTotalProfit / totalRevenue) * 100).toFixed(1) + '%' : '0%';
 
-  // Channel breakdown
+  // Channel breakdown (chỉ tính đơn hiệu lực)
   const channelMap = {};
-  orders.forEach(o => {
+  activeOrders.forEach(o => {
     const ch = o.channel || 'Khác';
     channelMap[ch] = (channelMap[ch] || 0) + 1;
   });
@@ -43,7 +46,7 @@ export function exportToExcel(orders = [], expenses = []) {
     [`Thời gian xuất: ${displayTime}`],
     [],
     ['I. CHỈ SỐ TÀI CHÍNH & DÒNG TIỀN (VNĐ)', 'GIÁ TRỊ', 'GHI CHÚ'],
-    ['Tổng doanh thu dự kiến', totalRevenue, 'Toàn bộ đơn hàng ghi nhận trong mùa lễ'],
+    ['Tổng doanh thu dự kiến', totalRevenue, 'Toàn bộ đơn hàng hiệu lực mùa lễ'],
     ['Tiền thực nhận (về ví)', cashInWallet, 'Đã thu 100% đơn giao + Tiền cọc đơn chờ'],
     ['Tổng vốn bỏ ra', totalExpenses, 'Chi phí hoa tươi, phụ liệu gói, nhân công, ăn uống'],
     ['Lợi nhuận thực thu', netActualProfit, 'Tiền về ví - Tổng vốn chi'],
@@ -52,7 +55,8 @@ export function exportToExcel(orders = [], expenses = []) {
     ['Biên lãi gộp dự kiến', marginPct, 'Tỷ suất lợi nhuận trên tổng doanh thu'],
     [],
     ['II. THỐNG KÊ VẬN HÀNH ĐƠN HÀNG', 'SỐ LƯỢNG', 'ĐƠN VỊ'],
-    ['Tổng số đơn đặt hoa', orders.length, 'Đơn'],
+    ['Tổng số đơn hiệu lực', activeOrders.length, 'Đơn'],
+    ['Đơn đã hủy', cancelledOrders.length, 'Đơn'],
     ['Tổng số lượng bó hoa', totalBouquets, 'Bó hoa'],
     ['Đơn đã giao hoàn tất', completedOrders.length, 'Đơn'],
     ['Đơn đang chờ cắm / giao', pendingOrders.length, 'Đơn'],

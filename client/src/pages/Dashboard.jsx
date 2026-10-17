@@ -134,7 +134,7 @@ export default function Dashboard({ onNavigate, refreshTrigger }) {
               </div>
             </div>
             <div className="kpi-value" id="kpiRevenue">{formatMoney(totalPotentialRevenue)}</div>
-            <div className="kpi-subtext"><span>Toàn bộ {statusCounts.all} đơn hàng mùa lễ</span></div>
+            <div className="kpi-subtext"><span>Toàn bộ {statusCounts.all} đơn hàng hiệu lực</span></div>
           </div>
 
           <div className="kpi-card cash">
@@ -184,7 +184,7 @@ export default function Dashboard({ onNavigate, refreshTrigger }) {
               </div>
             </div>
             <div className="kpi-value" id="kpiDebt">{formatMoney(pendingCollection)}</div>
-            <div className="kpi-subtext"><span>Cần thu khi giao 29 đơn còn lại</span></div>
+            <div className="kpi-subtext"><span>Cần thu khi giao {(statusCounts.pending || 0) + (statusCounts.ready || 0)} đơn còn lại</span></div>
           </div>
 
           <div className="kpi-card expected-profit">
@@ -227,7 +227,7 @@ export default function Dashboard({ onNavigate, refreshTrigger }) {
             <div className="kpi-value" id="kpiOrdersTotal">
               {statusCounts.all} <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-muted)' }}>đơn</span>
             </div>
-            <div className="kpi-subtext"><span>Mã đơn DH-001 đến DH-066</span></div>
+            <div className="kpi-subtext"><span>Đơn hàng hiệu lực mùa lễ</span></div>
           </div>
 
           <div className="kpi-card orders-completed">

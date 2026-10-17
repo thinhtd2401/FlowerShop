@@ -52,8 +52,12 @@ export default function Orders({ orders, searchQuery, onEditOrder, onUpdateStatu
 
   const filteredOrders = useMemo(() => {
     return orders.filter(o => {
-      // Status filter
-      if (filterStatus !== 'all' && o.status !== filterStatus) return false;
+      // Status filter: Nếu chọn 'all', mặc định chỉ xem các đơn có hiệu lực (trừ khi đang gõ tìm kiếm cụ thể)
+      if (filterStatus === 'all') {
+        if (!searchQuery && o.status === 'cancelled') return false;
+      } else if (o.status !== filterStatus) {
+        return false;
+      }
 
       // Custom Date Range filter
       if (startDate || endDate) {
@@ -87,36 +91,43 @@ export default function Orders({ orders, searchQuery, onEditOrder, onUpdateStatu
     });
   }, [orders, filterStatus, filterDate, startDate, endDate, searchQuery, todayShort]);
 
-  // Tab counts based on all orders
+  // Tab counts based on active orders (all chỉ đếm các đơn có hiệu lực)
   const counts = useMemo(() => ({
-    all: orders.length,
+    all: orders.filter(o => o.status !== 'cancelled').length,
     pending: orders.filter(o => o.status === 'pending').length,
     ready: orders.filter(o => o.status === 'ready').length,
     completed: orders.filter(o => o.status === 'completed').length,
+    cancelled: orders.filter(o => o.status === 'cancelled').length,
   }), [orders]);
 
-  // Summary stats based on filteredOrders
+  // Summary stats based on filteredOrders (khi chọn tab 'cancelled', tóm tắt chính xác các đơn hủy; ở các tab khác, loại trừ đơn hủy khỏi doanh thu)
   const summary = useMemo(() => {
     let totalAmount = 0;
     let totalDeposit = 0;
     let totalRemaining = 0;
     let totalQty = 0;
 
-    filteredOrders.forEach(o => {
+    const targetOrders = filterStatus === 'cancelled'
+      ? filteredOrders
+      : filteredOrders.filter(o => o.status !== 'cancelled');
+
+    targetOrders.forEach(o => {
       totalAmount += parseInt(o.totalAmount, 10) || 0;
       totalDeposit += parseInt(o.depositAmount, 10) || 0;
-      totalRemaining += parseInt(o.remainingAmount, 10) || 0;
+      if (o.status !== 'cancelled') {
+        totalRemaining += parseInt(o.remainingAmount, 10) || 0;
+      }
       totalQty += parseInt(o.quantity, 10) || 1;
     });
 
     return {
-      count: filteredOrders.length,
+      count: targetOrders.length,
       totalQty,
       totalAmount,
       totalDeposit,
       totalRemaining,
     };
-  }, [filteredOrders]);
+  }, [filteredOrders, filterStatus]);
 
   const isFiltering = filterStatus !== 'all' || filterDate !== 'all' || Boolean(startDate) || Boolean(endDate) || Boolean(searchQuery);
 
@@ -144,7 +155,7 @@ export default function Orders({ orders, searchQuery, onEditOrder, onUpdateStatu
       {/* Filter Bar */}
       <div className="filter-bar">
         <div className="filter-tabs">
-          {['all', 'pending', 'ready', 'completed'].map(status => (
+          {['all', 'pending', 'ready', 'completed', 'cancelled'].map(status => (
             <button key={status}
               className={`filter-tab ${filterStatus === status ? 'active' : ''}`}
               data-status={status}
@@ -243,13 +254,15 @@ export default function Orders({ orders, searchQuery, onEditOrder, onUpdateStatu
       {/* Orders Summary Bar */}
       <div className="orders-summary-bar">
         <div className="summary-stats-grid">
-          {/* Tổng đơn hàng */}
+          {/* Tổng đơn hàng / Tổng đơn hủy */}
           <div className="summary-stat-chip">
             <div className="summary-stat-icon orders">
               <ShoppingBag size={18} />
             </div>
             <div className="summary-stat-info">
-              <span className="summary-stat-label">Tổng Đơn Hàng</span>
+              <span className="summary-stat-label">
+                {filterStatus === 'cancelled' ? 'Tổng Đơn Hủy' : 'Tổng Đơn Hàng'}
+              </span>
               <span className="summary-stat-value">{summary.count} đơn</span>
             </div>
           </div>
@@ -260,19 +273,23 @@ export default function Orders({ orders, searchQuery, onEditOrder, onUpdateStatu
               <Flower2 size={18} />
             </div>
             <div className="summary-stat-info">
-              <span className="summary-stat-label">Tổng Số Lượng</span>
+              <span className="summary-stat-label">
+                {filterStatus === 'cancelled' ? 'Số Bó Đã Hủy' : 'Tổng Số Lượng'}
+              </span>
               <span className="summary-stat-value">{summary.totalQty} bó hoa</span>
             </div>
           </div>
 
-          {/* Tổng tiền / Doanh thu */}
+          {/* Tổng tiền / Doanh thu / Giá trị hủy */}
           <div className="summary-stat-chip">
             <div className="summary-stat-icon revenue">
               <DollarSign size={18} />
             </div>
             <div className="summary-stat-info">
-              <span className="summary-stat-label">Tổng Doanh Thu</span>
-              <span className="summary-stat-value" style={{ color: 'var(--primary)' }}>
+              <span className="summary-stat-label">
+                {filterStatus === 'cancelled' ? 'Tổng Tiền Đơn Hủy' : 'Tổng Doanh Thu'}
+              </span>
+              <span className="summary-stat-value" style={{ color: filterStatus === 'cancelled' ? '#ef4444' : 'var(--primary)' }}>
                 {formatMoney(summary.totalAmount)}
               </span>
             </div>
@@ -311,7 +328,7 @@ export default function Orders({ orders, searchQuery, onEditOrder, onUpdateStatu
             <div className="summary-filter-info">
               <Check size={14} color="var(--primary)" />
               <span>
-                Đang hiển thị kết quả theo bộ lọc: <strong>{summary.count} đơn</strong>
+                Đang hiển thị kết quả theo bộ lọc: <strong>{filteredOrders.length} đơn</strong>
                 {startDate && endDate ? ` (từ ${formatToDDMMYYYY(startDate)} đến ${formatToDDMMYYYY(endDate)})` : ''}
                 {startDate && !endDate ? ` (từ ngày ${formatToDDMMYYYY(startDate)})` : ''}
                 {!startDate && endDate ? ` (đến ngày ${formatToDDMMYYYY(endDate)})` : ''}

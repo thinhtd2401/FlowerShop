@@ -217,7 +217,7 @@ export default function App() {
       <Sidebar
         currentView={currentView}
         onNavigate={setCurrentView}
-        totalOrdersCount={orders.length}
+        totalOrdersCount={orders.filter(o => o.status !== 'cancelled').length}
       />
 
       <div className="main-wrapper">
