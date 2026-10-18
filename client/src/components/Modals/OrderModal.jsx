@@ -10,6 +10,7 @@ import {
 import { formatMoney } from '../../utils/format';
 import DatePicker from '../UI/DatePicker';
 import InAppCameraModal from '../UI/InAppCameraModal';
+import ConfirmDeleteModal from '../UI/ConfirmDeleteModal';
 import { uploadApi } from '../../api';
 import { compressImage, compressImages } from '../../utils/imageCompressor';
 import {
@@ -102,16 +103,32 @@ const DEFAULT_FORM = {
   images: []
 };
 
-export default function OrderModal({ isOpen, order, onClose, onSave }) {
+export default function OrderModal({ isOpen, order, onClose, onSave, onDelete }) {
   const [form, setForm] = useState(DEFAULT_FORM);
   const [showPrintTag, setShowPrintTag] = useState(false);
   const [timeSession, setTimeSession] = useState('all');
   const [isUploadingImages, setIsUploadingImages] = useState(false);
   const [showInAppCamera, setShowInAppCamera] = useState(false);
   const [isDraftRestored, setIsDraftRestored] = useState(false);
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const isEditing = !!order;
 
   const fileInputRef = useRef(null);
+
+  const handleConfirmDelete = async () => {
+    if (!order?.id || !onDelete) return;
+    try {
+      setIsDeleting(true);
+      await onDelete(order.id);
+      setShowConfirmDelete(false);
+      onClose();
+    } catch (err) {
+      console.error('Lỗi khi xóa đơn hàng:', err);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   useEffect(() => {
     if (order) {
@@ -987,15 +1004,51 @@ export default function OrderModal({ isOpen, order, onClose, onSave }) {
             </div>
           </div>
 
-          <div className="modal-footer">
-            <button type="button" className="btn btn-secondary" onClick={onClose}>
-              Hủy
-            </button>
-            <button type="submit" className="btn btn-primary">
-              {isEditing ? 'Lưu Thay Đổi Đơn Hàng' : 'Tạo Đơn Hàng Mới'}
-            </button>
+          <div className="modal-footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', flexWrap: 'wrap', gap: 10 }}>
+            <div>
+              {isEditing && onDelete && (
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setShowConfirmDelete(true)}
+                  style={{
+                    color: '#ef4444',
+                    borderColor: 'rgba(239, 68, 68, 0.35)',
+                    background: 'rgba(239, 68, 68, 0.05)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6
+                  }}
+                  title="Xóa vĩnh viễn đơn hàng này"
+                >
+                  <Trash2 size={15} />
+                  <span>Xóa Đơn Hàng</span>
+                </button>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginLeft: 'auto' }}>
+              <button type="button" className="btn btn-secondary" onClick={onClose}>
+                Hủy
+              </button>
+              <button type="submit" className="btn btn-primary">
+                {isEditing ? 'Lưu Thay Đổi Đơn Hàng' : 'Tạo Đơn Hàng Mới'}
+              </button>
+            </div>
           </div>
         </form>
+
+        {/* Modal Xác Nhận Xóa Đơn Hàng */}
+        <ConfirmDeleteModal
+          isOpen={showConfirmDelete}
+          onClose={() => setShowConfirmDelete(false)}
+          onConfirm={handleConfirmDelete}
+          title="Xóa Đơn Hàng"
+          itemName={`${order?.id || ''} — ${order?.customerName || ''} (${formatMoney(order?.totalAmount || 0)})`}
+          message="Hành động này sẽ xóa vĩnh viễn đơn hàng này khỏi hệ thống. Bạn có chắc chắn muốn xóa không?"
+          confirmText="Xóa Đơn Hàng"
+          isDeleting={isDeleting}
+        />
       </div>
     </div>
   );

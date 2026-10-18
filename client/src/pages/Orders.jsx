@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { formatMoney, getStatusInfo, parseDateToComparable, formatToDDMMYYYY, formatOrderTime } from '../utils/format';
 import DatePicker from '../components/UI/DatePicker';
+import ConfirmDeleteModal from '../components/UI/ConfirmDeleteModal';
 
 const STATUS_LABELS = {
   all: 'Tất cả',
@@ -138,15 +139,29 @@ export default function Orders({ orders, searchQuery, onEditOrder, onUpdateStatu
     setEndDate('');
   };
 
+  const [orderToDelete, setOrderToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const handleStatusChange = async (id, newStatus) => {
     if (window.confirm('Xác nhận đổi trạng thái đơn này?')) {
       await onUpdateStatus(id, newStatus);
     }
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm(`Xóa đơn ${id}? Hành động này không thể hoàn tác!`)) {
-      await onDeleteOrder(id);
+  const handleDeleteClick = (order) => {
+    setOrderToDelete(order);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!orderToDelete) return;
+    try {
+      setIsDeleting(true);
+      await onDeleteOrder(orderToDelete.id);
+      setOrderToDelete(null);
+    } catch (err) {
+      console.error('Lỗi khi xóa đơn hàng:', err);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -487,10 +502,10 @@ export default function Orders({ orders, searchQuery, onEditOrder, onUpdateStatu
                   </td>
                   <td style={{ textAlign: 'right' }}>
                     <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
-                      <button className="btn btn-secondary btn-sm" onClick={() => onEditOrder(o)} title="Chỉnh sửa">
+                      <button type="button" className="btn btn-secondary btn-sm" onClick={() => onEditOrder(o)} title="Chỉnh sửa">
                         <Pencil size={14} />
                       </button>
-                      <button className="btn btn-secondary btn-sm" onClick={() => handleDelete(o.id)}
+                      <button type="button" className="btn btn-secondary btn-sm" onClick={() => handleDeleteClick(o)}
                         style={{ color: '#e11d48' }} title="Xóa">
                         <Trash2 size={14} />
                       </button>
@@ -638,10 +653,10 @@ export default function Orders({ orders, searchQuery, onEditOrder, onUpdateStatu
                   )}
                 </div>
                 <div style={{ display: 'flex', gap: 6 }}>
-                  <button className="btn btn-secondary btn-sm" onClick={() => onEditOrder(o)} title="Chỉnh sửa">
+                  <button type="button" className="btn btn-secondary btn-sm" onClick={() => onEditOrder(o)} title="Chỉnh sửa">
                     <Pencil size={15} />
                   </button>
-                  <button className="btn btn-secondary btn-sm" onClick={() => handleDelete(o.id)} style={{ color: '#e11d48' }} title="Xóa">
+                  <button type="button" className="btn btn-secondary btn-sm" onClick={() => handleDeleteClick(o)} style={{ color: '#e11d48' }} title="Xóa">
                     <Trash2 size={15} />
                   </button>
                 </div>
@@ -650,6 +665,18 @@ export default function Orders({ orders, searchQuery, onEditOrder, onUpdateStatu
           );
         })}
       </div>
+
+      {/* Modal Xác Nhận Xóa Đơn Hàng */}
+      <ConfirmDeleteModal
+        isOpen={!!orderToDelete}
+        onClose={() => setOrderToDelete(null)}
+        onConfirm={handleConfirmDelete}
+        title="Xóa Đơn Hàng"
+        itemName={orderToDelete ? `${orderToDelete.id} — ${orderToDelete.customerName} (${formatMoney(orderToDelete.totalAmount)})` : ''}
+        message="Hành động này sẽ xóa vĩnh viễn đơn hàng này khỏi hệ thống và không thể hoàn tác."
+        confirmText="Xóa Đơn Hàng"
+        isDeleting={isDeleting}
+      />
     </section>
   );
 }

@@ -268,12 +268,14 @@ export default function App() {
         order={editingOrder}
         onClose={handleCloseOrderModal}
         onSave={handleSaveOrder}
+        onDelete={handleDeleteOrder}
       />
       <ExpenseModal
         isOpen={expenseModalOpen}
         expense={editingExpense}
         onClose={() => setExpenseModalOpen(false)}
         onSave={handleSaveExpense}
+        onDelete={handleDeleteExpense}
       />
       <ImageGalleryModal
         isOpen={galleryState.isOpen}

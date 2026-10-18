@@ -2,9 +2,10 @@
  * components/Modals/ExpenseModal.jsx - Quản lý thêm & chỉnh sửa chi phí vốn
  */
 import { useState, useEffect } from 'react';
-import { Wallet, X, Calendar, Sparkles } from 'lucide-react';
+import { Wallet, X, Calendar, Sparkles, Trash2 } from 'lucide-react';
 import { formatMoney, formatToDDMMYYYY } from '../../utils/format';
 import DatePicker from '../UI/DatePicker';
+import ConfirmDeleteModal from '../UI/ConfirmDeleteModal';
 
 const EXPENSE_PRESETS = {
   'Hoa tươi': [
@@ -39,8 +40,10 @@ const DEFAULT_FORM = {
   date: ''
 };
 
-export default function ExpenseModal({ isOpen, expense, onClose, onSave }) {
+export default function ExpenseModal({ isOpen, expense, onClose, onSave, onDelete }) {
   const [form, setForm] = useState(DEFAULT_FORM);
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const isEditing = !!expense;
 
   useEffect(() => {
@@ -98,6 +101,20 @@ export default function ExpenseModal({ isOpen, expense, onClose, onSave }) {
     });
     onClose();
   }
+
+  const handleConfirmDelete = async () => {
+    if (!expense || !onDelete) return;
+    try {
+      setIsDeleting(true);
+      await onDelete(expense.id);
+      setShowConfirmDelete(false);
+      onClose();
+    } catch {
+      // error handled in App toast
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -225,16 +242,47 @@ export default function ExpenseModal({ isOpen, expense, onClose, onSave }) {
             </div>
           </div>
 
-          <div className="modal-footer">
-            <button type="button" className="btn btn-secondary" onClick={onClose}>
-              Hủy
-            </button>
-            <button type="submit" className="btn btn-primary">
-              {isEditing ? 'Lưu Thay Đổi' : 'Thêm Khoản Chi'}
-            </button>
+          <div className="modal-footer" style={{ display: 'flex', justifyContent: isEditing ? 'space-between' : 'flex-end', alignItems: 'center' }}>
+            {isEditing && (
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setShowConfirmDelete(true)}
+                style={{
+                  color: '#ef4444',
+                  borderColor: 'rgba(239, 68, 68, 0.3)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6
+                }}
+              >
+                <Trash2 size={15} />
+                <span>Xóa Khoản Chi</span>
+              </button>
+            )}
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button type="button" className="btn btn-secondary" onClick={onClose}>
+                Hủy
+              </button>
+              <button type="submit" className="btn btn-primary">
+                {isEditing ? 'Lưu Thay Đổi' : 'Thêm Khoản Chi'}
+              </button>
+            </div>
           </div>
         </form>
       </div>
+
+      {/* Modal Xác Nhận Xóa Chi Phí Nội Bộ */}
+      <ConfirmDeleteModal
+        isOpen={showConfirmDelete}
+        onClose={() => setShowConfirmDelete(false)}
+        onConfirm={handleConfirmDelete}
+        title="Xóa Khoản Chi Phí"
+        itemName={expense ? `${expense.id} — ${expense.itemName} (${formatMoney(totalCost)})` : ''}
+        message="Hành động này sẽ xóa vĩnh viễn khoản chi phí này khỏi hệ thống và không thể hoàn tác."
+        confirmText="Xóa Khoản Chi"
+        isDeleting={isDeleting}
+      />
     </div>
   );
 }

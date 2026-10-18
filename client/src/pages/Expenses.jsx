@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { Flower2, Package, Coffee, Layers, Trash2, Pencil } from 'lucide-react';
 import { formatMoney } from '../utils/format';
+import ConfirmDeleteModal from '../components/UI/ConfirmDeleteModal';
 
 const CATEGORY_ICONS = {
   'Hoa tươi': Flower2,
@@ -9,11 +11,23 @@ const CATEGORY_ICONS = {
 };
 
 export default function Expenses({ expenses, onEditExpense, onDeleteExpense }) {
+  const [expenseToDelete, setExpenseToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const totalCapital = expenses.reduce((sum, e) => sum + (e.totalCost || 0), 0);
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Xóa khoản chi phí này?')) {
-      await onDeleteExpense(id);
+  const handleDeleteClick = (expense) => {
+    setExpenseToDelete(expense);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!expenseToDelete) return;
+    try {
+      setIsDeleting(true);
+      await onDeleteExpense(expenseToDelete.id);
+      setExpenseToDelete(null);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -76,7 +90,7 @@ export default function Expenses({ expenses, onEditExpense, onDeleteExpense }) {
                         <Pencil size={14} />
                       </button>
                       <button className="btn btn-secondary btn-sm"
-                        onClick={() => handleDelete(e.id)}
+                        onClick={() => handleDeleteClick(e)}
                         style={{ color: '#e11d48' }} title="Xóa">
                         <Trash2 size={14} />
                       </button>
@@ -105,7 +119,7 @@ export default function Expenses({ expenses, onEditExpense, onDeleteExpense }) {
                   <button className="btn btn-secondary btn-sm" onClick={() => onEditExpense(e)} title="Chỉnh sửa">
                     <Pencil size={14} />
                   </button>
-                  <button className="btn btn-secondary btn-sm" onClick={() => handleDelete(e.id)} style={{ color: '#e11d48' }} title="Xóa">
+                  <button className="btn btn-secondary btn-sm" onClick={() => handleDeleteClick(e)} style={{ color: '#e11d48' }} title="Xóa">
                     <Trash2 size={14} />
                   </button>
                 </div>
@@ -122,6 +136,18 @@ export default function Expenses({ expenses, onEditExpense, onDeleteExpense }) {
           );
         })}
       </div>
+
+      {/* Modal Xác Nhận Xóa Chi Phí */}
+      <ConfirmDeleteModal
+        isOpen={!!expenseToDelete}
+        onClose={() => setExpenseToDelete(null)}
+        onConfirm={handleConfirmDelete}
+        title="Xóa Khoản Chi Phí"
+        itemName={expenseToDelete ? `${expenseToDelete.id} — ${expenseToDelete.itemName} (${formatMoney(expenseToDelete.totalCost)})` : ''}
+        message="Hành động này sẽ xóa vĩnh viễn khoản chi phí này khỏi hệ thống và không thể hoàn tác."
+        confirmText="Xóa Khoản Chi"
+        isDeleting={isDeleting}
+      />
     </section>
   );
 }
