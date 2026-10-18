@@ -5,12 +5,19 @@ import { useState, useEffect, useRef } from 'react';
 import {
   Flower2, X, Sparkles, Clock, Truck, Store, Printer, CreditCard,
   MessageSquare, MapPin, UserCheck, Calendar, Flame, Camera, Upload,
-  Trash2, Loader2, Image as ImageIcon
+  Trash2, Loader2, Image as ImageIcon, RotateCcw
 } from 'lucide-react';
 import { formatMoney } from '../../utils/format';
 import DatePicker from '../UI/DatePicker';
+import InAppCameraModal from '../UI/InAppCameraModal';
 import { uploadApi } from '../../api';
-import { compressImages } from '../../utils/imageCompressor';
+import { compressImage, compressImages } from '../../utils/imageCompressor';
+import {
+  saveOrderDraft,
+  getOrderDraft,
+  clearOrderDraft,
+  hasSubstantialData
+} from '../../utils/orderDraft';
 
 const FLOWER_PRESETS = [
   { name: 'Mix nhạt tone pastel', price: 250000 },
@@ -68,6 +75,12 @@ function getFriendlyDatePreview(ddmmyyyy) {
   return ddmmyyyy;
 }
 
+function getTodayFormatted() {
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
+}
+
 const DEFAULT_FORM = {
   customerName: '',
   phone: '',
@@ -77,8 +90,8 @@ const DEFAULT_FORM = {
   quantity: 1,
   unitPrice: 250000,
   depositAmount: 0,
-  orderDate: '',
-  deliveryDate: '20/10/2026',
+  orderDate: getTodayFormatted(),
+  deliveryDate: getTodayFormatted(),
   deliveryTime: '10:00',
   deliveryType: 'Khách qua lấy',
   deliveryAddress: '',
@@ -94,25 +107,86 @@ export default function OrderModal({ isOpen, order, onClose, onSave }) {
   const [showPrintTag, setShowPrintTag] = useState(false);
   const [timeSession, setTimeSession] = useState('all');
   const [isUploadingImages, setIsUploadingImages] = useState(false);
+  const [showInAppCamera, setShowInAppCamera] = useState(false);
+  const [isDraftRestored, setIsDraftRestored] = useState(false);
   const isEditing = !!order;
 
-  const cameraInputRef = useRef(null);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
     if (order) {
       setForm({ ...DEFAULT_FORM, ...order, images: order.images || [] });
-    } else {
-      const today = new Date().toLocaleDateString('vi-VN');
-      setForm({
-        ...DEFAULT_FORM,
-        orderDate: today,
-        deliveryDate: '20/10/2026',
-        images: []
-      });
+      setIsDraftRestored(false);
+    } else if (isOpen) {
+      const savedDraft = getOrderDraft();
+      if (savedDraft && hasSubstantialData(savedDraft)) {
+        setForm({ ...DEFAULT_FORM, ...savedDraft });
+        setIsDraftRestored(true);
+      } else {
+        const today = getTodayFormatted();
+        setForm({
+          ...DEFAULT_FORM,
+          orderDate: today,
+          deliveryDate: today,
+          images: []
+        });
+        setIsDraftRestored(false);
+      }
     }
     setShowPrintTag(false);
   }, [order, isOpen]);
+
+  // Tự động lưu bản nháp theo thời gian thực khi người dùng nhập liệu (chỉ áp dụng khi tạo đơn mới)
+  useEffect(() => {
+    if (!order && isOpen && hasSubstantialData(form)) {
+      const timer = setTimeout(() => {
+        saveOrderDraft(form);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [form, order, isOpen]);
+
+  const handleDiscardDraft = () => {
+    clearOrderDraft();
+    const today = getTodayFormatted();
+    setForm({
+      ...DEFAULT_FORM,
+      orderDate: today,
+      deliveryDate: today,
+      images: []
+    });
+    setIsDraftRestored(false);
+  };
+
+  const handleDirectPhotoCaptured = async (capturedFile) => {
+    if (!capturedFile) return;
+    try {
+      setIsUploadingImages(true);
+      const compressed = await compressImage(capturedFile, {
+        maxWidth: 1600,
+        maxHeight: 1600,
+        quality: 0.85
+      });
+      const formData = new FormData();
+      formData.append('images', compressed);
+      const res = await uploadApi.uploadImages(formData);
+      if (res.success && res.urls && res.urls.length > 0) {
+        setForm(prev => {
+          const nextForm = {
+            ...prev,
+            images: [...(prev.images || []), ...res.urls]
+          };
+          if (!order) saveOrderDraft(nextForm);
+          return nextForm;
+        });
+      }
+    } catch (err) {
+      console.error('Lỗi upload ảnh chụp trực tiếp:', err);
+      alert('Tải ảnh thất bại: ' + (err.message || 'Lỗi tải ảnh'));
+    } finally {
+      setIsUploadingImages(false);
+    }
+  };
 
   const handleImageUpload = async (e) => {
     e.stopPropagation();
@@ -131,10 +205,14 @@ export default function OrderModal({ isOpen, order, onClose, onSave }) {
       });
       const res = await uploadApi.uploadImages(formData);
       if (res.success && res.urls && res.urls.length > 0) {
-        setForm(prev => ({
-          ...prev,
-          images: [...(prev.images || []), ...res.urls]
-        }));
+        setForm(prev => {
+          const nextForm = {
+            ...prev,
+            images: [...(prev.images || []), ...res.urls]
+          };
+          if (!order) saveOrderDraft(nextForm);
+          return nextForm;
+        });
       }
     } catch (err) {
       console.error('Lỗi upload ảnh:', err);
@@ -167,6 +245,19 @@ export default function OrderModal({ isOpen, order, onClose, onSave }) {
       };
     }
   }, [isOpen]);
+
+  // Bảo vệ chống reload ngoài ý muốn khi đang mở form tạo/sửa đơn
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleBeforeUnload = (e) => {
+      if (hasSubstantialData(form)) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isOpen, form]);
 
   const quantity = Math.max(1, parseInt(form.quantity) || 1);
   const unitPrice = Math.max(0, parseInt(form.unitPrice) || 0);
@@ -229,6 +320,7 @@ export default function OrderModal({ isOpen, order, onClose, onSave }) {
       depositAmount: finalDeposit,
       remainingAmount: finalRemaining,
     });
+    clearOrderDraft();
     onClose();
   }
 
@@ -261,6 +353,46 @@ export default function OrderModal({ isOpen, order, onClose, onSave }) {
             </button>
           </div>
         </div>
+
+        {/* Thông báo tự động khôi phục bản nháp khi bị reload / văng form */}
+        {isDraftRestored && !isEditing && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            background: 'rgba(244, 63, 94, 0.08)',
+            border: '1px solid rgba(244, 63, 94, 0.25)',
+            borderRadius: 8,
+            padding: '8px 14px',
+            margin: '12px 16px 0',
+            fontSize: 12.5,
+            color: 'var(--primary)',
+            flexWrap: 'wrap',
+            gap: 8
+          }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 600 }}>
+              <Sparkles size={14} />
+              <span>Đã tự động khôi phục dữ liệu bạn vừa nhập dở trước đó!</span>
+            </span>
+            <button
+              type="button"
+              onClick={handleDiscardDraft}
+              className="btn btn-secondary btn-sm"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+                fontSize: 11.5,
+                padding: '4px 8px',
+                height: 'auto'
+              }}
+              title="Xóa nháp và tạo lại từ đầu"
+            >
+              <RotateCcw size={12} />
+              <span>Xóa nháp</span>
+            </button>
+          </div>
+        )}
 
         {/* Print Floral Tag Preview Sub-modal */}
         {showPrintTag && (
@@ -424,10 +556,10 @@ export default function OrderModal({ isOpen, order, onClose, onSave }) {
                 Tải ảnh mẫu khách yêu cầu hoặc chụp trực tiếp hoa tại tiệm (không bắt buộc, có thể thêm nhiều ảnh).
               </p>
 
-              {/* Action buttons with native label activation */}
+              {/* Action buttons: Chụp ảnh trực tiếp (In-App Live Camera) & Chọn từ thư viện */}
               <div className="order-photo-actions" style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
-                <label
-                  htmlFor="orderCameraCaptureInput"
+                <button
+                  type="button"
                   className="btn btn-secondary"
                   style={{
                     display: 'inline-flex',
@@ -441,35 +573,16 @@ export default function OrderModal({ isOpen, order, onClose, onSave }) {
                     touchAction: 'manipulation',
                     userSelect: 'none'
                   }}
-                  onClick={(e) => e.stopPropagation()}
+                  disabled={isUploadingImages}
+                  onClick={() => setShowInAppCamera(true)}
+                  title="Chụp ảnh trực tiếp trong trình duyệt (Không bị tắt tab)"
                 >
                   <Camera size={16} />
-                  <span>Chụp Ảnh Bằng Điện Thoại</span>
-                  <input
-                    id="orderCameraCaptureInput"
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    style={{
-                      position: 'absolute',
-                      width: '1px',
-                      height: '1px',
-                      padding: 0,
-                      margin: '-1px',
-                      overflow: 'hidden',
-                      clip: 'rect(0, 0, 0, 0)',
-                      whiteSpace: 'nowrap',
-                      border: 0,
-                      opacity: 0,
-                      pointerEvents: 'none'
-                    }}
-                    disabled={isUploadingImages}
-                    onChange={handleImageUpload}
-                  />
-                </label>
+                  <span>Chụp Ảnh Trực Tiếp</span>
+                </button>
 
-                <label
-                  htmlFor="orderLibraryUploadInput"
+                <button
+                  type="button"
                   className="btn btn-secondary"
                   style={{
                     display: 'inline-flex',
@@ -483,33 +596,34 @@ export default function OrderModal({ isOpen, order, onClose, onSave }) {
                     touchAction: 'manipulation',
                     userSelect: 'none'
                   }}
-                  onClick={(e) => e.stopPropagation()}
+                  disabled={isUploadingImages}
+                  onClick={() => fileInputRef.current?.click()}
+                  title="Chọn ảnh có sẵn hoặc dùng camera máy"
                 >
                   <Upload size={16} />
                   <span>Chọn Từ Thư Viện / Máy</span>
-                  <input
-                    id="orderLibraryUploadInput"
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    style={{
-                      position: 'absolute',
-                      width: '1px',
-                      height: '1px',
-                      padding: 0,
-                      margin: '-1px',
-                      overflow: 'hidden',
-                      clip: 'rect(0, 0, 0, 0)',
-                      whiteSpace: 'nowrap',
-                      border: 0,
-                      opacity: 0,
-                      pointerEvents: 'none'
-                    }}
-                    disabled={isUploadingImages}
-                    onChange={handleImageUpload}
-                  />
-                </label>
+                </button>
+
+                {/* Hidden File Input tách rời hoàn toàn, không lồng trong label */}
+                <input
+                  ref={fileInputRef}
+                  id="orderLibraryUploadInput"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  style={{ display: 'none' }}
+                  disabled={isUploadingImages}
+                  onChange={handleImageUpload}
+                />
               </div>
+
+              {/* In-App Live Camera Modal */}
+              <InAppCameraModal
+                isOpen={showInAppCamera}
+                onClose={() => setShowInAppCamera(false)}
+                onCapture={handleDirectPhotoCaptured}
+                onFallbackToFile={() => fileInputRef.current?.click()}
+              />
 
               {/* Uploading progress banner */}
               {isUploadingImages && (
@@ -581,7 +695,8 @@ export default function OrderModal({ isOpen, order, onClose, onSave }) {
                   type="number"
                   id="orderUnitPrice"
                   min="0"
-                  step="10000"
+                  step="any"
+                  placeholder="0"
                   required
                   value={form.unitPrice}
                   onChange={e => set('unitPrice', e.target.value)}
@@ -625,7 +740,8 @@ export default function OrderModal({ isOpen, order, onClose, onSave }) {
                   type="number"
                   id="orderDeposit"
                   min="0"
-                  step="10000"
+                  step="any"
+                  placeholder="0"
                   value={form.depositAmount}
                   onChange={e => set('depositAmount', e.target.value)}
                 />

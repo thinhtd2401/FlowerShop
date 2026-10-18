@@ -17,11 +17,18 @@ import Expenses from './pages/Expenses';
 import { useOrders } from './hooks/useOrders';
 import { useExpenses } from './hooks/useExpenses';
 import { exportToExcel } from './utils/exportExcel';
+import {
+  shouldAutoRestoreOrderModal,
+  setOrderModalOpenFlag,
+  clearOrderDraft
+} from './utils/orderDraft';
 
 export default function App() {
   const [currentView, setCurrentView] = useState('dashboard');
   const [searchQuery, setSearchQuery] = useState('');
-  const [orderModalOpen, setOrderModalOpen] = useState(false);
+  const [orderModalOpen, setOrderModalOpen] = useState(() => {
+    return shouldAutoRestoreOrderModal();
+  });
   const [expenseModalOpen, setExpenseModalOpen] = useState(false);
   const [editingOrder, setEditingOrder] = useState(null);
   const [editingExpense, setEditingExpense] = useState(null);
@@ -71,11 +78,18 @@ export default function App() {
   const handleOpenAddOrder = useCallback(() => {
     setEditingOrder(null);
     setOrderModalOpen(true);
+    setOrderModalOpenFlag(true);
   }, []);
 
   const handleEditOrder = useCallback((order) => {
     setEditingOrder(order);
     setOrderModalOpen(true);
+  }, []);
+
+  const handleCloseOrderModal = useCallback(() => {
+    setOrderModalOpen(false);
+    setEditingOrder(null);
+    setOrderModalOpenFlag(false);
   }, []);
 
   const handleOpenAddExpense = useCallback(() => {
@@ -95,6 +109,7 @@ export default function App() {
         showToast('Cập nhật đơn hàng thành công!', 'success');
       } else {
         await createOrder(formData);
+        clearOrderDraft();
         showToast('Tạo đơn hàng mới thành công!', 'success');
       }
       setRefreshTrigger(prev => prev + 1);
@@ -251,7 +266,7 @@ export default function App() {
       <OrderModal
         isOpen={orderModalOpen}
         order={editingOrder}
-        onClose={() => setOrderModalOpen(false)}
+        onClose={handleCloseOrderModal}
         onSave={handleSaveOrder}
       />
       <ExpenseModal

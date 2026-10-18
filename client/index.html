@@ -5,7 +5,59 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>Floral Studio - Quản Lý Đơn Hoa & Chi Phí Vốn</title>
-    <meta name="description" content="Phần mềm quản lý tiệm hoa: kiểm soát đơn hàng, lịch giao hoa theo giờ, công nợ tiền cọc và báo cáo doanh thu lợi nhuận tự động." />
+    <!-- Ngrok & Remote Device HMR WebSocket Fix -->
+    <script>
+      (function() {
+        try {
+          var isNgrokOrRemote = window.location.hostname.includes('ngrok') ||
+                                (window.location.protocol === 'https:' && !window.location.hostname.includes('localhost'));
+
+          if (isNgrokOrRemote) {
+            // 1. Intercept WebSocket to fix URL and port on Ngrok / HTTPS
+            var OriginalWebSocket = window.WebSocket;
+            window.WebSocket = function(url, protocols) {
+              if (typeof url === 'string') {
+                // Fix trailing colon or broken port (e.g. wss://domain:/ -> wss://domain/)
+                url = url.replace(/(:\/)/, '/');
+
+                // If pointing to localhost or internal dev port, redirect to current public host
+                if (url.includes('localhost') || url.includes(':5173')) {
+                  url = 'wss://' + window.location.host + '/';
+                }
+                if (url.startsWith('ws://')) {
+                  url = url.replace(/^ws:\/\//, 'wss://');
+                }
+              }
+
+              var ws = new OriginalWebSocket(url, protocols);
+
+              // 2. Active Heartbeat every 10s to keep ngrok tunnel alive & prevent 30s idle disconnect
+              var pingInterval = setInterval(function() {
+                if (ws.readyState === WebSocket.OPEN) {
+                  try {
+                    ws.send(JSON.stringify({ type: 'ping' }));
+                  } catch (err) {}
+                } else if (ws.readyState === WebSocket.CLOSED || ws.readyState === WebSocket.CLOSING) {
+                  clearInterval(pingInterval);
+                }
+              }, 10000);
+
+              return ws;
+            };
+            window.WebSocket.prototype = OriginalWebSocket.prototype;
+
+            // 3. Keep-alive HTTP ping every 20s for Ngrok free tunnel
+            setInterval(function() {
+              fetch('/api/health').catch(function() {});
+            }, 20000);
+
+            console.log('🌸 [Floral Studio] Ngrok HMR & WebSocket keep-alive active.');
+          }
+        } catch (e) {
+          console.warn('[Floral Studio] Ngrok HMR setup error:', e);
+        }
+      })();
+    </script>
     <!-- SheetJS for Excel Export -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   </head>

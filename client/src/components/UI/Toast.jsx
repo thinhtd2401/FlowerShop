@@ -22,7 +22,7 @@ export function ToastContainer() {
       setToasts(prev => [...prev, { id, message, type }]);
       setTimeout(() => {
         setToasts(prev => prev.filter(t => t.id !== id));
-      }, 3000);
+      }, 5000);
     };
     return () => { toastHandlerRef = null; };
   }, []);
@@ -30,13 +30,21 @@ export function ToastContainer() {
   return (
     <div className="toast-container" id="toastContainer">
       {toasts.map(toast => (
-        <div key={toast.id} className={`toast ${toast.type}`}>
+        <div
+          key={toast.id}
+          className={`toast ${toast.type}`}
+          onClick={() => setToasts(prev => prev.filter(t => t.id !== toast.id))}
+          title="Nhấn để đóng thông báo"
+          style={{ cursor: 'pointer' }}
+        >
           {toast.type === 'success' ? (
-            <CheckCircle2 size={18} color="#10b981" />
+            <CheckCircle2 size={18} className="toast-icon" />
           ) : toast.type === 'error' ? (
-            <AlertCircle size={18} color="#ef4444" />
+            <AlertCircle size={18} className="toast-icon" />
+          ) : toast.type === 'warning' ? (
+            <AlertCircle size={18} className="toast-icon" />
           ) : (
-            <Info size={18} color="#3b82f6" />
+            <Info size={18} className="toast-icon" />
           )}
           <span>{toast.message}</span>
         </div>

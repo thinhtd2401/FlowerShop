@@ -116,3 +116,29 @@ export function formatToYYYYMMDD(val) {
   }
   return '';
 }
+
+/**
+ * Chuyển đổi timestamp tạo đơn (SQLite UTC hoặc ISO string) sang giờ địa phương định dạng 24h HH:mm:ss
+ */
+export function formatOrderTime(createdAtStr) {
+  if (!createdAtStr) return '';
+  try {
+    let dateObj;
+    if (createdAtStr.includes('T') || createdAtStr.endsWith('Z')) {
+      dateObj = new Date(createdAtStr);
+    } else if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/.test(createdAtStr)) {
+      // Chuyển SQLite UTC timestamp "YYYY-MM-DD HH:MM:SS" sang UTC Date
+      dateObj = new Date(createdAtStr.replace(' ', 'T') + 'Z');
+    } else {
+      dateObj = new Date(createdAtStr);
+    }
+
+    if (isNaN(dateObj.getTime())) return '';
+
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${pad(dateObj.getHours())}:${pad(dateObj.getMinutes())}:${pad(dateObj.getSeconds())}`;
+  } catch {
+    return '';
+  }
+}
+

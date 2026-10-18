@@ -9,14 +9,18 @@
   box-sizing: border-box;
 }
 
-html, body {
+html {
   width: 100%;
-  max-width: 100vw;
   overflow-x: hidden;
-  position: relative;
+  overflow-y: auto;
   -webkit-text-size-adjust: 100%;
-  touch-action: pan-y;
-  overscroll-behavior-y: none;
+}
+
+body {
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  position: relative;
   background-color: var(--bg-app);
   color: var(--text-main);
   transition: background-color 0.2s ease, color 0.2s ease;
@@ -25,11 +29,9 @@ html, body {
 #root, .app-layout, .main-wrapper, .page-container, .view-section {
   width: 100%;
   max-width: 100%;
-  overflow-x: hidden;
 }
 
 #root {
-  width: 100%;
   min-height: 100vh;
   background-color: var(--bg-app);
 }
@@ -147,6 +149,11 @@ select {
 
 /* BẮT BUỘC: Chống auto zoom trên mobile khi người dùng chạm vào ô nhập dữ liệu */
 @media (max-width: 768px) {
+  html {
+    touch-action: pan-y;
+    overscroll-behavior-y: none;
+  }
+
   input,
   select,
   textarea,

@@ -5,24 +5,25 @@ const db = require('./database');
 const path = require('path');
 const fs = require('fs');
 
-// Load seed data from original initialData.js using eval
+// Load seed data from local seedData.json
 function loadSeedData() {
-  const filePath = path.join(__dirname, '../../../js/initialData.js');
+  const filePath = path.join(__dirname, 'seedData.json');
   if (!fs.existsSync(filePath)) {
-    console.warn('⚠️  initialData.js not found, skipping seed.');
+    console.warn('⚠️  seedData.json not found, skipping seed.');
     return { orders: [], expenses: [] };
   }
 
-  // Execute the file content in a sandboxed context
-  const content = fs.readFileSync(filePath, 'utf8');
-  const sandbox = { window: {} };
-  const fn = new Function('window', content);
-  fn(sandbox.window);
-
-  return {
-    orders: sandbox.window.INITIAL_ORDERS || [],
-    expenses: sandbox.window.INITIAL_EXPENSES || []
-  };
+  try {
+    const raw = fs.readFileSync(filePath, 'utf8');
+    const data = JSON.parse(raw);
+    return {
+      orders: data.orders || [],
+      expenses: data.expenses || []
+    };
+  } catch (err) {
+    console.error('❌ Error parsing seedData.json:', err.message);
+    return { orders: [], expenses: [] };
+  }
 }
 
 function seedIfEmpty() {

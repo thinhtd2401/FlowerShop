@@ -8,6 +8,9 @@ export default defineConfig({
     host: true,
     port: 5173,
     allowedHosts: true,
+    hmr: {
+      timeout: 15000,
+    },
     proxy: {
       '/api': {
         target: 'http://localhost:3001',
@@ -20,3 +23,4 @@ export default defineConfig({
     },
   },
 })
+

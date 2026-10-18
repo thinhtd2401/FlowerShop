@@ -1,7 +1,11 @@
 /**
- * utils/imageCompressor.js - Nén và resize ảnh phía client trước khi upload
- * Giúp tối ưu hóa dung lượng ảnh chụp từ camera điện thoại (từ 5-10MB xuống ~200KB)
- * Giữ nguyên độ sắc nét chi tiết hoa tươi mà upload cực nhanh.
+ * utils/imageCompressor.js - Nén và resize ảnh phía client tiết kiệm RAM tối đa
+ * Tối ưu đặc biệt cho thiết bị di động / máy tính bảng Android (như Samsung Tab A9)
+ * Tránh OOM (Out Of Memory) crash tab bằng cách:
+ * 1. Sử dụng createImageBitmap hardware resize nếu có hỗ trợ
+ * 2. Giải phóng URL.revokeObjectURL & bitmap.close() ngay lập tức
+ * 3. Thu dọn canvas dimensions (width=0, height=0) sau khi xuất Blob
+ * 4. Xử lý tuần tự (Sequential) thay vì nén song song gây tràn RAM
  */
 
 export async function compressImage(file, options = {}) {
@@ -12,28 +16,94 @@ export async function compressImage(file, options = {}) {
     mimeType = 'image/jpeg'
   } = options;
 
-  // Kiểm tra an toàn xem có phải file hình ảnh hoặc camera blob không
+  if (!file) return file;
+
   const fileType = (file?.type || '').toLowerCase();
   const fileName = file?.name || `photo_${Date.now()}.jpg`;
 
-  // Nếu là GIF hoặc SVG, giữ nguyên để không mất animation / vector
+  // Giữ nguyên GIF hoặc SVG
   if (fileType === 'image/gif' || fileType === 'image/svg+xml') {
     return file;
   }
 
-  return new Promise((resolve) => {
+  // 1. Thử nghiệm tối ưu phần cứng với createImageBitmap (Tiết kiệm >80% RAM trên Android Chrome)
+  if (typeof window !== 'undefined' && 'createImageBitmap' in window) {
     try {
-      const objectUrl = URL.createObjectURL(file);
+      // Đọc kích thước ban đầu với ImageBitmap
+      const initialBitmap = await createImageBitmap(file);
+      let width = initialBitmap.width || 1200;
+      let height = initialBitmap.height || 1200;
+      initialBitmap.close(); // Giải phóng ngay bitmap ban đầu
+
+      if (width > maxWidth || height > maxHeight) {
+        if (width / height > maxWidth / maxHeight) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        } else {
+          width = Math.round((width * maxHeight) / height);
+          height = maxHeight;
+        }
+      }
+
+      // Resize trực tiếp ở tầng native/hardware
+      const resizedBitmap = await createImageBitmap(file, {
+        resizeWidth: width,
+        resizeHeight: height,
+        resizeQuality: 'medium'
+      });
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(resizedBitmap, 0, 0);
+        resizedBitmap.close(); // Đóng bitmap ngay sau khi vẽ
+
+        const compressed = await new Promise((resolve) => {
+          canvas.toBlob((blob) => {
+            canvas.width = 0;
+            canvas.height = 0;
+            if (!blob) {
+              resolve(file);
+              return;
+            }
+            try {
+              const baseName = fileName.replace(/\.[^/.]+$/, '') || `flower_${Date.now()}`;
+              const newFile = new File([blob], `${baseName}.jpg`, {
+                type: mimeType,
+                lastModified: Date.now()
+              });
+              resolve(newFile.size < file.size ? newFile : file);
+            } catch {
+              resolve(blob || file);
+            }
+          }, mimeType, quality);
+        });
+
+        return compressed;
+      }
+      resizedBitmap.close();
+    } catch (bitmapErr) {
+      // Fallback về cơ chế Image() truyền thống nếu createImageBitmap không hỗ trợ định dạng
+      console.warn('createImageBitmap fallback:', bitmapErr);
+    }
+  }
+
+  // 2. Cơ chế Canvas HTMLImageElement Fallback
+  return new Promise((resolve) => {
+    let objectUrl = '';
+    try {
+      objectUrl = URL.createObjectURL(file);
       const img = new Image();
 
       img.onload = () => {
         try {
-          URL.revokeObjectURL(objectUrl);
+          if (objectUrl) URL.revokeObjectURL(objectUrl);
 
           let width = img.width || 1200;
           let height = img.height || 1200;
 
-          // Tính toán kích thước mới theo tỉ lệ chuẩn
           if (width > maxWidth || height > maxHeight) {
             if (width / height > maxWidth / maxHeight) {
               height = Math.round((height * maxWidth) / width);
@@ -47,7 +117,6 @@ export async function compressImage(file, options = {}) {
           const canvas = document.createElement('canvas');
           canvas.width = width;
           canvas.height = height;
-
           const ctx = canvas.getContext('2d');
           if (!ctx) {
             resolve(file);
@@ -55,28 +124,25 @@ export async function compressImage(file, options = {}) {
           }
 
           ctx.imageSmoothingEnabled = true;
-          ctx.imageSmoothingQuality = 'high';
+          ctx.imageSmoothingQuality = 'medium';
           ctx.drawImage(img, 0, 0, width, height);
 
           canvas.toBlob(
             (blob) => {
+              canvas.width = 0;
+              canvas.height = 0;
               if (!blob) {
                 resolve(file);
                 return;
               }
-
               try {
-                // Đổi đuôi mở rộng file thành .jpg an toàn
                 const baseName = fileName.replace(/\.[^/.]+$/, '') || `flower_${Date.now()}`;
-                const newName = `${baseName}.jpg`;
-                const compressedFile = new File([blob], newName, {
+                const compressedFile = new File([blob], `${baseName}.jpg`, {
                   type: mimeType,
                   lastModified: Date.now()
                 });
-
                 resolve(compressedFile.size < file.size ? compressedFile : file);
               } catch {
-                // Fallback nếu constructor File không được hỗ trợ trên WebView cũ
                 resolve(blob || file);
               }
             },
@@ -84,25 +150,38 @@ export async function compressImage(file, options = {}) {
             quality
           );
         } catch (innerErr) {
-          console.warn('Canvas resize error, fallback to raw file:', innerErr);
+          console.warn('Canvas resize fallback error:', innerErr);
           resolve(file);
         }
       };
 
       img.onerror = () => {
-        try { URL.revokeObjectURL(objectUrl); } catch {}
+        if (objectUrl) {
+          try { URL.revokeObjectURL(objectUrl); } catch {}
+        }
         resolve(file);
       };
 
       img.src = objectUrl;
     } catch (err) {
-      console.warn('URL.createObjectURL failed, fallback to raw file:', err);
+      if (objectUrl) {
+        try { URL.revokeObjectURL(objectUrl); } catch {}
+      }
       resolve(file);
     }
   });
 }
 
+/**
+ * Nén mảng các file ảnh TUẦN TỰ (Sequential)
+ * Tránh nén song song làm quá tải RAM của trình duyệt trên Android 4GB
+ */
 export async function compressImages(files, options = {}) {
   const fileArray = Array.from(files || []);
-  return Promise.all(fileArray.map((f) => compressImage(f, options)));
+  const results = [];
+  for (const file of fileArray) {
+    const compressed = await compressImage(file, options);
+    results.push(compressed);
+  }
+  return results;
 }

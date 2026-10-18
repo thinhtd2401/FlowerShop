@@ -20,7 +20,8 @@ import {
   Sparkles
 } from 'lucide-react';
 import { uploadApi } from '../../api';
-import { compressImages } from '../../utils/imageCompressor';
+import { compressImage, compressImages } from '../../utils/imageCompressor';
+import InAppCameraModal from './InAppCameraModal';
 
 export default function ImageGalleryModal({
   isOpen,
@@ -32,6 +33,7 @@ export default function ImageGalleryModal({
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [isUploading, setIsUploading] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
+  const [showInAppCamera, setShowInAppCamera] = useState(false);
 
   const cameraInputRef = useRef(null);
   const libraryInputRef = useRef(null);
@@ -144,8 +146,34 @@ export default function ImageGalleryModal({
       alert('Tải ảnh thất bại: ' + (err.message || 'Lỗi kết nối'));
     } finally {
       setIsUploading(false);
-      // Reset input value to allow re-selecting same file
       if (e.target) e.target.value = '';
+    }
+  };
+
+  const handleDirectPhotoCaptured = async (capturedFile) => {
+    if (!capturedFile) return;
+    try {
+      setIsUploading(true);
+      const compressed = await compressImage(capturedFile, {
+        maxWidth: 1600,
+        maxHeight: 1600,
+        quality: 0.85
+      });
+      const formData = new FormData();
+      formData.append('images', compressed);
+      const res = await uploadApi.uploadImages(formData);
+      if (res.success && res.urls && res.urls.length > 0) {
+        const newImages = [...images, ...res.urls];
+        if (onUpdateImages && order?.id) {
+          await onUpdateImages(order.id, newImages);
+        }
+        setCurrentIndex(newImages.length - 1);
+        setImageLoading(true);
+      }
+    } catch (err) {
+      alert('Tải ảnh thất bại: ' + (err.message || 'Lỗi kết nối'));
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -246,20 +274,25 @@ export default function ImageGalleryModal({
         )}
 
         <div className="gallery-header-actions">
-          {/* Quick upload buttons using native label */}
-          <label
-            htmlFor="galleryCameraInput"
+          {/* Quick upload buttons: Chụp trực tiếp & Thêm từ thư viện */}
+          <button
+            type="button"
             className={`gallery-btn-action ${isUploading ? 'disabled' : ''}`}
-            title="Chụp ảnh mới bằng camera"
-            style={{ cursor: isUploading ? 'not-allowed' : 'pointer', opacity: isUploading ? 0.6 : 1, margin: 0 }}
-            onClick={(e) => {
-              if (isUploading) e.preventDefault();
-              e.stopPropagation();
+            title="Chụp ảnh mới trực tiếp"
+            style={{
+              cursor: isUploading ? 'not-allowed' : 'pointer',
+              opacity: isUploading ? 0.6 : 1,
+              margin: 0,
+              background: 'none',
+              border: 'none',
+              color: 'inherit'
             }}
+            disabled={isUploading}
+            onClick={() => setShowInAppCamera(true)}
           >
             <Camera size={18} />
             <span className="gallery-btn-label">Chụp</span>
-          </label>
+          </button>
 
           <label
             htmlFor="galleryLibraryInput"
@@ -427,6 +460,13 @@ export default function ImageGalleryModal({
           </div>
         </div>
       )}
+      {/* In-App Camera Modal for Gallery */}
+      <InAppCameraModal
+        isOpen={showInAppCamera}
+        onClose={() => setShowInAppCamera(false)}
+        onCapture={handleDirectPhotoCaptured}
+        onFallbackToFile={() => document.getElementById('galleryLibraryInput')?.click()}
+      />
     </div>
   );
 }

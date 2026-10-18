@@ -26,8 +26,5 @@
   "homepage": "https://github.com/thinhtd2401/FlowerShop#readme",
   "devDependencies": {
     "concurrently": "^10.0.6"
-  },
-  "dependencies": {
-    "xlsx": "^0.18.5"
   }
 }

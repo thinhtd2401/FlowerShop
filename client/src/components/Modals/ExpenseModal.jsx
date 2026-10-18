@@ -178,7 +178,7 @@ export default function ExpenseModal({ isOpen, expense, onClose, onSave }) {
                   type="number"
                   id="expenseUnitPrice"
                   min="0"
-                  step="10000"
+                  step="any"
                   required
                   placeholder="VD: 250000"
                   value={form.unitPrice}

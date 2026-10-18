@@ -1,12 +1,26 @@
-# Excel temporary lock files
-~$*
-*.tmp
-*.log
+# Dependencies
+node_modules/
+**/node_modules/
 
-# OS files
+# Production build outputs
+dist/
+client/dist/
+
+# Logs & temp files
+*.log
+npm-debug.log*
+yarn-debug.log*
+*.tmp
+~$*
+
+# Database WAL & SHM temporary runtime files
+*.db-shm
+*.db-wal
+*.db.bak
+
+# OS & Editor
 Thumbs.db
 .DS_Store
-
-# Editor directories
 .vscode/
 .idea/
+

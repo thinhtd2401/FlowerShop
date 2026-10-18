@@ -2,6 +2,7 @@
  * utils/exportExcel.js - Xuất báo cáo tài chính, đơn hàng và chi phí ra Excel đa trang (.xlsx)
  */
 import * as XLSX from 'xlsx';
+import { formatOrderTime } from './format';
 
 export function exportToExcel(orders = [], expenses = []) {
   const wb = XLSX.utils.book_new();
@@ -105,14 +106,17 @@ export function exportToExcel(orders = [], expenses = []) {
     'Nội Dung Thiệp'
   ];
 
-  const orderRows = orders.map((o, idx) => [
-    idx + 1,
-    o.id || '',
-    o.orderDate || '',
-    o.customerName || '',
-    o.phone || '',
-    o.channel || '',
-    o.productName || '',
+  const orderRows = orders.map((o, idx) => {
+    const timeStr = formatOrderTime(o.createdAt);
+    const orderDateWithTime = timeStr ? `${o.orderDate || ''} ${timeStr}`.trim() : (o.orderDate || '');
+    return [
+      idx + 1,
+      o.id || '',
+      orderDateWithTime,
+      o.customerName || '',
+      o.phone || '',
+      o.channel || '',
+      o.productName || '',
     parseInt(o.quantity, 10) || 1,
     parseInt(o.unitPrice, 10) || 0,
     parseInt(o.totalAmount, 10) || 0,
@@ -125,7 +129,7 @@ export function exportToExcel(orders = [], expenses = []) {
     statusLabels[o.status] || o.status || '',
     o.notes || '',
     o.cardMessage || ''
-  ]);
+  ]});
 
   const wsOrders = XLSX.utils.aoa_to_sheet([orderHeaders, ...orderRows]);
   wsOrders['!cols'] = [

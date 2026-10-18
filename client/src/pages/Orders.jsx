@@ -24,7 +24,7 @@ import {
   X,
   Package
 } from 'lucide-react';
-import { formatMoney, getStatusInfo, parseDateToComparable, formatToDDMMYYYY } from '../utils/format';
+import { formatMoney, getStatusInfo, parseDateToComparable, formatToDDMMYYYY, formatOrderTime } from '../utils/format';
 import DatePicker from '../components/UI/DatePicker';
 
 const STATUS_LABELS = {
@@ -377,8 +377,25 @@ export default function Orders({ orders, searchQuery, onEditOrder, onUpdateStatu
                     {index + 1}
                   </td>
                   <td>
-                    <strong>{o.id}</strong>
+                    <strong style={{ fontSize: 13 }}>{o.id}</strong>
                     <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{o.orderDate}</div>
+                    {formatOrderTime(o.createdAt) && (
+                      <div
+                        style={{
+                          fontSize: 10.5,
+                          color: 'var(--text-muted)',
+                          marginTop: 1,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 3,
+                          fontVariantNumeric: 'tabular-nums'
+                        }}
+                        title={`Thời gian tạo đơn: ${formatOrderTime(o.createdAt)}`}
+                      >
+                        <Clock size={10} color="var(--primary)" />
+                        <span>{formatOrderTime(o.createdAt)}</span>
+                      </div>
+                    )}
                   </td>
                   <td>
                     <strong>{o.customerName}</strong>
@@ -503,7 +520,18 @@ export default function Orders({ orders, searchQuery, onEditOrder, onUpdateStatu
                   <span className="order-stt-badge">#{index + 1}</span>
                   <div>
                     <span style={{ fontWeight: 800, color: 'var(--primary)', fontSize: 14 }}>{o.id}</span>
-                    <span style={{ fontSize: 11.5, color: 'var(--text-muted)', marginLeft: 6 }}>{o.orderDate}</span>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4, marginTop: 1 }}>
+                      <span>{o.orderDate}</span>
+                      {formatOrderTime(o.createdAt) && (
+                        <>
+                          <span>•</span>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, fontVariantNumeric: 'tabular-nums' }}>
+                            <Clock size={10} color="var(--primary)" />
+                            <span>{formatOrderTime(o.createdAt)}</span>
+                          </span>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <select
