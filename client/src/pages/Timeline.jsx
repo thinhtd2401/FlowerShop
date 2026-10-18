@@ -1,13 +1,16 @@
 /**
  * pages/Timeline.jsx - Tiến độ cắm hoa theo ngày và khung giờ
+ * Hỗ trợ tổng hợp số bó, chờ cắm, đã cắm, đã giao, đã hủy từng ngày,
+ * kèm bộ lọc trạng thái và tìm kiếm nhanh tiếng Việt.
  */
 import { useState, useMemo } from 'react';
 import {
   Flame, Calendar, Clock, Flower2, FileText, Truck, Store,
-  Camera, Images, Maximize2, MessageSquare, Phone, Filter, Package
+  Camera, Images, Maximize2, MessageSquare, Phone, Package,
+  Search, X, Sparkles, CheckCircle2, AlertCircle, RotateCcw
 } from 'lucide-react';
 import DatePicker from '../components/UI/DatePicker';
-import { formatMoney, getStatusInfo } from '../utils/format';
+import { formatMoney, getStatusInfo, removeVietnameseTones } from '../utils/format';
 
 function getTodayDMY() {
   const d = new Date();
@@ -20,26 +23,6 @@ function getTomorrowDMY() {
   d.setDate(d.getDate() + 1);
   const pad = (n) => String(n).padStart(2, '0');
   return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
-}
-
-function groupByDate(orders) {
-  const map = {};
-  orders
-    .filter(o => o.status !== 'cancelled')
-    .forEach(o => {
-      const date = o.deliveryDate || 'Chưa xác định';
-      if (!map[date]) map[date] = [];
-      map[date].push(o);
-    });
-
-  // Sort dates
-  return Object.entries(map).sort(([a], [b]) => {
-    const parseDate = (d) => {
-      const [day, month, year] = d.split('/').map(Number);
-      return new Date(year, month - 1, day);
-    };
-    try { return parseDate(a) - parseDate(b); } catch { return 0; }
-  });
 }
 
 function sortByTime(orders) {
@@ -58,14 +41,16 @@ export default function Timeline({ orders, onUpdateStatus, onOpenGallery }) {
   const [filterMode, setFilterMode] = useState('default');
   const [customDate, setCustomDate] = useState('');
 
+  // Status Filter: 'all' | 'pending' | 'ready' | 'completed' | 'cancelled'
+  const [statusFilter, setStatusFilter] = useState('all');
+
+  // Search query: Mã đơn, tên khách, SĐT, mẫu hoa
+  const [searchQuery, setSearchQuery] = useState('');
+
   const isPeakDay = (date) => date?.includes('20/10');
 
-  const nonCancelledOrders = useMemo(() => {
-    return orders.filter(o => o.status !== 'cancelled');
-  }, [orders]);
-
-  // Compute counts for filter pills (both orders and bouquets)
-  const counts = useMemo(() => {
+  // 1. Tính toán số liệu cho các tab Ngày (Date Filter Pills)
+  const dateCounts = useMemo(() => {
     let todayOrders = 0;
     let todayBouquets = 0;
     let tomorrowOrders = 0;
@@ -76,26 +61,28 @@ export default function Timeline({ orders, onUpdateStatus, onOpenGallery }) {
     let oct20Bouquets = 0;
     let allBouquets = 0;
 
-    nonCancelledOrders.forEach(o => {
+    orders.forEach(o => {
       const d = o.deliveryDate?.trim();
       const qty = parseInt(o.quantity, 10) || 1;
-      allBouquets += qty;
+      if (o.status !== 'cancelled') {
+        allBouquets += qty;
+      }
 
       if (d === todayStr) {
         todayOrders++;
-        todayBouquets += qty;
+        if (o.status !== 'cancelled') todayBouquets += qty;
       }
       if (d === tomorrowStr) {
         tomorrowOrders++;
-        tomorrowBouquets += qty;
+        if (o.status !== 'cancelled') tomorrowBouquets += qty;
       }
       if (d === todayStr || d === tomorrowStr) {
         defaultOrders++;
-        defaultBouquets += qty;
+        if (o.status !== 'cancelled') defaultBouquets += qty;
       }
       if (d?.includes('20/10')) {
         oct20Orders++;
-        oct20Bouquets += qty;
+        if (o.status !== 'cancelled') oct20Bouquets += qty;
       }
     });
 
@@ -108,14 +95,14 @@ export default function Timeline({ orders, onUpdateStatus, onOpenGallery }) {
       tomorrowBouquets,
       oct20: oct20Orders,
       oct20Bouquets,
-      all: nonCancelledOrders.length,
+      all: orders.length,
       allBouquets
     };
-  }, [nonCancelledOrders, todayStr, tomorrowStr]);
+  }, [orders, todayStr, tomorrowStr]);
 
-  // Filter orders according to active filterMode
-  const filteredOrders = useMemo(() => {
-    return nonCancelledOrders.filter(o => {
+  // 2. Lọc đơn hàng theo Ngày đã chọn (chưa lọc theo Status và Search)
+  const dateFilteredOrders = useMemo(() => {
+    return orders.filter(o => {
       const d = o.deliveryDate?.trim();
       if (filterMode === 'default') {
         return d === todayStr || d === tomorrowStr;
@@ -137,9 +124,124 @@ export default function Timeline({ orders, onUpdateStatus, onOpenGallery }) {
       }
       return true;
     });
-  }, [nonCancelledOrders, filterMode, customDate, todayStr, tomorrowStr]);
+  }, [orders, filterMode, customDate, todayStr, tomorrowStr]);
 
-  const grouped = useMemo(() => groupByDate(filteredOrders), [filteredOrders]);
+  // 3. Tính toán Macro Summary và Status Counts cho khoảng ngày đang xem
+  const macroSummary = useMemo(() => {
+    let totalOrders = 0;
+    let totalBouquets = 0;
+    let pendingCount = 0;
+    let readyCount = 0;
+    let completedCount = 0;
+    let cancelledCount = 0;
+
+    dateFilteredOrders.forEach(o => {
+      totalOrders++;
+      const qty = parseInt(o.quantity, 10) || 1;
+      if (o.status !== 'cancelled') {
+        totalBouquets += qty;
+      }
+      if (o.status === 'pending') pendingCount++;
+      else if (o.status === 'ready') readyCount++;
+      else if (o.status === 'completed') completedCount++;
+      else if (o.status === 'cancelled') cancelledCount++;
+    });
+
+    return {
+      totalOrders,
+      totalBouquets,
+      pendingCount,
+      readyCount,
+      completedCount,
+      cancelledCount
+    };
+  }, [dateFilteredOrders]);
+
+  // 4. Nhóm đơn theo từng ngày kèm tính toán Daily KPI chi tiết & lọc theo Status + Search
+  const grouped = useMemo(() => {
+    const dateMap = {};
+
+    // Gom toàn bộ đơn theo ngày trong phạm vi dateFilteredOrders
+    dateFilteredOrders.forEach(o => {
+      const d = o.deliveryDate?.trim() || 'Chưa xác định';
+      if (!dateMap[d]) {
+        dateMap[d] = {
+          date: d,
+          allDateOrders: [],
+          visibleOrders: []
+        };
+      }
+      dateMap[d].allDateOrders.push(o);
+    });
+
+    const normalizedSearch = removeVietnameseTones(searchQuery);
+    const rawSearch = searchQuery.trim().toLowerCase();
+
+    Object.values(dateMap).forEach(group => {
+      // Lọc các đơn hiển thị thỏa mãn statusFilter và searchQuery
+      group.visibleOrders = group.allDateOrders.filter(o => {
+        // Status filter
+        if (statusFilter !== 'all' && o.status !== statusFilter) {
+          return false;
+        }
+
+        // Search query
+        if (rawSearch) {
+          const idMatch = (o.id || '').toLowerCase().includes(rawSearch);
+          const nameMatch = removeVietnameseTones(o.customerName).includes(normalizedSearch);
+          const phoneMatch = (o.phone || '').includes(rawSearch) || (o.recipientPhone || '').includes(rawSearch);
+          const prodMatch = removeVietnameseTones(o.productName).includes(normalizedSearch);
+          if (!idMatch && !nameMatch && !phoneMatch && !prodMatch) {
+            return false;
+          }
+        }
+        return true;
+      });
+
+      // Thống kê toàn diện từng ngày từ allDateOrders
+      let dailyBouquets = 0;
+      let pendingCount = 0;
+      let readyCount = 0;
+      let completedCount = 0;
+      let cancelledCount = 0;
+      let totalAmount = 0;
+
+      group.allDateOrders.forEach(o => {
+        const qty = parseInt(o.quantity, 10) || 1;
+        if (o.status !== 'cancelled') {
+          dailyBouquets += qty;
+          totalAmount += (parseInt(o.totalAmount, 10) || 0);
+        }
+        if (o.status === 'pending') pendingCount++;
+        else if (o.status === 'ready') readyCount++;
+        else if (o.status === 'completed') completedCount++;
+        else if (o.status === 'cancelled') cancelledCount++;
+      });
+
+      group.metrics = {
+        totalOrders: group.allDateOrders.length,
+        totalBouquets: dailyBouquets,
+        pendingCount,
+        readyCount,
+        completedCount,
+        cancelledCount,
+        totalAmount
+      };
+    });
+
+    // Chỉ giữ lại các nhóm ngày có đơn hàng hiển thị
+    const activeGroups = Object.values(dateMap).filter(g => g.visibleOrders.length > 0);
+
+    // Sắp xếp ngày theo trình tự thời gian
+    return activeGroups.sort((a, b) => {
+      const parseDate = (d) => {
+        const parts = d.split('/').map(Number);
+        if (parts.length === 3) return new Date(parts[2], parts[1] - 1, parts[0]);
+        return new Date(9999, 0, 1);
+      };
+      try { return parseDate(a.date) - parseDate(b.date); } catch { return 0; }
+    });
+  }, [dateFilteredOrders, statusFilter, searchQuery]);
 
   const handleStatusChange = async (id, newStatus) => {
     if (window.confirm('Xác nhận đổi trạng thái đơn này?')) {
@@ -147,6 +249,13 @@ export default function Timeline({ orders, onUpdateStatus, onOpenGallery }) {
         await onUpdateStatus(id, newStatus);
       }
     }
+  };
+
+  const handleResetFilters = () => {
+    setStatusFilter('all');
+    setSearchQuery('');
+    setFilterMode('default');
+    setCustomDate('');
   };
 
   return (
@@ -157,92 +266,216 @@ export default function Timeline({ orders, onUpdateStatus, onOpenGallery }) {
         </p>
       </div>
 
-      {/* Date Filter Bar */}
+      {/* Date Filter & Control Toolbar */}
       <div className="timeline-filter-bar">
-        <div className="timeline-filter-pills">
-          <button
-            type="button"
-            className={`timeline-pill ${filterMode === 'default' ? 'active' : ''}`}
-            onClick={() => {
-              setFilterMode('default');
-              setCustomDate('');
-            }}
-            title="Mặc định: Chỉ xem lịch cắm hoa Hôm nay và Ngày mai"
-          >
-            <Calendar size={14} />
-            <span>Hôm nay &amp; Ngày mai</span>
-            <span className="pill-count">{counts.default} đơn · {counts.defaultBouquets} bó</span>
-          </button>
+        {/* Row 1: Date Filter Pills & Custom Date Picker */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, width: '100%', flexWrap: 'wrap' }}>
+          <div className="timeline-filter-pills">
+            <button
+              type="button"
+              className={`timeline-pill ${filterMode === 'default' ? 'active' : ''}`}
+              onClick={() => {
+                setFilterMode('default');
+                setCustomDate('');
+              }}
+              title="Mặc định: Chỉ xem lịch cắm hoa Hôm nay và Ngày mai"
+            >
+              <Calendar size={14} />
+              <span>Hôm nay &amp; Ngày mai</span>
+              <span className="pill-count">{dateCounts.default} đơn · {dateCounts.defaultBouquets} bó</span>
+            </button>
 
-          <button
-            type="button"
-            className={`timeline-pill ${filterMode === 'today' ? 'active' : ''}`}
-            onClick={() => {
-              setFilterMode('today');
-              setCustomDate('');
-            }}
-          >
-            <span>Hôm nay ({todayStr.slice(0, 5)})</span>
-            <span className="pill-count">{counts.today} đơn · {counts.todayBouquets} bó</span>
-          </button>
+            <button
+              type="button"
+              className={`timeline-pill ${filterMode === 'today' ? 'active' : ''}`}
+              onClick={() => {
+                setFilterMode('today');
+                setCustomDate('');
+              }}
+            >
+              <span>Hôm nay ({todayStr.slice(0, 5)})</span>
+              <span className="pill-count">{dateCounts.today} đơn · {dateCounts.todayBouquets} bó</span>
+            </button>
 
-          <button
-            type="button"
-            className={`timeline-pill ${filterMode === 'tomorrow' ? 'active' : ''}`}
-            onClick={() => {
-              setFilterMode('tomorrow');
-              setCustomDate('');
-            }}
-          >
-            <span>Ngày mai ({tomorrowStr.slice(0, 5)})</span>
-            <span className="pill-count">{counts.tomorrow} đơn · {counts.tomorrowBouquets} bó</span>
-          </button>
+            <button
+              type="button"
+              className={`timeline-pill ${filterMode === 'tomorrow' ? 'active' : ''}`}
+              onClick={() => {
+                setFilterMode('tomorrow');
+                setCustomDate('');
+              }}
+            >
+              <span>Ngày mai ({tomorrowStr.slice(0, 5)})</span>
+              <span className="pill-count">{dateCounts.tomorrow} đơn · {dateCounts.tomorrowBouquets} bó</span>
+            </button>
 
-          <button
-            type="button"
-            className={`timeline-pill ${filterMode === 'oct20' ? 'active' : ''}`}
-            onClick={() => {
-              setFilterMode('oct20');
-              setCustomDate('');
-            }}
-            style={{ color: filterMode === 'oct20' ? '#ffffff' : '#b45309' }}
-          >
-            <Flame size={14} color={filterMode === 'oct20' ? '#ffffff' : '#f97316'} />
-            <span>Đợt 20/10</span>
-            <span className="pill-count">{counts.oct20} đơn · {counts.oct20Bouquets} bó</span>
-          </button>
+            <button
+              type="button"
+              className={`timeline-pill ${filterMode === 'oct20' ? 'active' : ''}`}
+              onClick={() => {
+                setFilterMode('oct20');
+                setCustomDate('');
+              }}
+              style={{ color: filterMode === 'oct20' ? '#ffffff' : '#b45309' }}
+            >
+              <Flame size={14} color={filterMode === 'oct20' ? '#ffffff' : '#f97316'} />
+              <span>Đợt 20/10</span>
+              <span className="pill-count">{dateCounts.oct20} đơn · {dateCounts.oct20Bouquets} bó</span>
+            </button>
 
-          <button
-            type="button"
-            className={`timeline-pill ${filterMode === 'all' ? 'active' : ''}`}
-            onClick={() => {
-              setFilterMode('all');
-              setCustomDate('');
-            }}
-          >
-            <span>Tất cả ngày</span>
-            <span className="pill-count">{counts.all} đơn · {counts.allBouquets} bó</span>
-          </button>
+            <button
+              type="button"
+              className={`timeline-pill ${filterMode === 'all' ? 'active' : ''}`}
+              onClick={() => {
+                setFilterMode('all');
+                setCustomDate('');
+              }}
+            >
+              <span>Tất cả ngày</span>
+              <span className="pill-count">{dateCounts.all} đơn · {dateCounts.allBouquets} bó</span>
+            </button>
+          </div>
+
+          {/* DatePicker to pick any specific date */}
+          <div className="timeline-date-control">
+            <DatePicker
+              value={customDate}
+              onChange={(dmy) => {
+                setCustomDate(dmy);
+                setFilterMode(dmy ? 'custom' : 'default');
+              }}
+              onClear={() => {
+                setCustomDate('');
+                setFilterMode('default');
+              }}
+              placeholder="Xem ngày khác..."
+              style={{ minWidth: 155 }}
+            />
+          </div>
         </div>
 
-        {/* DatePicker to pick any specific date */}
-        <div className="timeline-date-control">
-          <DatePicker
-            value={customDate}
-            onChange={(dmy) => {
-              setCustomDate(dmy);
-              setFilterMode(dmy ? 'custom' : 'default');
-            }}
-            onClear={() => {
-              setCustomDate('');
-              setFilterMode('default');
-            }}
-            placeholder="Xem ngày khác..."
-            style={{ minWidth: 155 }}
-          />
+        {/* Row 2: Status Filter Tabs & Instant Search Box */}
+        <div className="timeline-toolbar-sub">
+          <div className="timeline-status-pills">
+            <button
+              type="button"
+              className={`timeline-status-pill ${statusFilter === 'all' ? 'active' : ''}`}
+              data-status="all"
+              onClick={() => setStatusFilter('all')}
+              title="Xem tất cả trạng thái đơn"
+            >
+              <span>Tất cả</span>
+              <span className="pill-count">{macroSummary.totalOrders}</span>
+            </button>
+
+            <button
+              type="button"
+              className={`timeline-status-pill ${statusFilter === 'pending' ? 'active' : ''}`}
+              data-status="pending"
+              onClick={() => setStatusFilter('pending')}
+              title="Chỉ xem đơn đang chờ cắm hoa"
+            >
+              <Clock size={12} />
+              <span>Chờ cắm</span>
+              <span className="pill-count">{macroSummary.pendingCount}</span>
+            </button>
+
+            <button
+              type="button"
+              className={`timeline-status-pill ${statusFilter === 'ready' ? 'active' : ''}`}
+              data-status="ready"
+              onClick={() => setStatusFilter('ready')}
+              title="Chỉ xem đơn đã bó xong, chờ giao"
+            >
+              <Sparkles size={12} />
+              <span>Đã cắm xong</span>
+              <span className="pill-count">{macroSummary.readyCount}</span>
+            </button>
+
+            <button
+              type="button"
+              className={`timeline-status-pill ${statusFilter === 'completed' ? 'active' : ''}`}
+              data-status="completed"
+              onClick={() => setStatusFilter('completed')}
+              title="Chỉ xem đơn đã giao thành công"
+            >
+              <CheckCircle2 size={12} />
+              <span>Đã giao</span>
+              <span className="pill-count">{macroSummary.completedCount}</span>
+            </button>
+
+            <button
+              type="button"
+              className={`timeline-status-pill ${statusFilter === 'cancelled' ? 'active' : ''}`}
+              data-status="cancelled"
+              onClick={() => setStatusFilter('cancelled')}
+              title="Chỉ xem đơn đã hủy"
+            >
+              <AlertCircle size={12} />
+              <span>Đã hủy</span>
+              <span className="pill-count">{macroSummary.cancelledCount}</span>
+            </button>
+          </div>
+
+          {/* Quick Search Box */}
+          <div className="timeline-search-box">
+            <Search size={15} className="timeline-search-icon" />
+            <input
+              type="text"
+              className="timeline-search-input"
+              placeholder="Tìm mã đơn, tên khách, SĐT, mẫu hoa..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                className="timeline-search-clear"
+                onClick={() => setSearchQuery('')}
+                title="Xóa tìm kiếm"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
+      {/* Row 3: Macro Summary Banner for Current Filter View */}
+      {dateFilteredOrders.length > 0 && (
+        <div className="timeline-macro-summary">
+          <div className="macro-item total">
+            <Package size={15} />
+            <span>Tổng: <strong>{macroSummary.totalBouquets} bó</strong> ({macroSummary.totalOrders} đơn)</span>
+          </div>
+          <div className="macro-divider" />
+          <div className="macro-item pending">
+            <Clock size={13} />
+            <span>Chờ cắm: <strong>{macroSummary.pendingCount}</strong></span>
+          </div>
+          <div className="macro-divider" />
+          <div className="macro-item ready">
+            <Sparkles size={13} />
+            <span>Đã cắm: <strong>{macroSummary.readyCount}</strong></span>
+          </div>
+          <div className="macro-divider" />
+          <div className="macro-item completed">
+            <CheckCircle2 size={13} />
+            <span>Đã giao: <strong>{macroSummary.completedCount}</strong></span>
+          </div>
+          {macroSummary.cancelledCount > 0 && (
+            <>
+              <div className="macro-divider" />
+              <div className="macro-item cancelled">
+                <AlertCircle size={13} />
+                <span>Đã hủy: <strong>{macroSummary.cancelledCount}</strong></span>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Timeline Container */}
       <div id="timelineContainer">
         {grouped.length === 0 && (
           <div style={{
@@ -255,25 +488,43 @@ export default function Timeline({ orders, onUpdateStatus, onOpenGallery }) {
           }}>
             <Calendar size={36} color="var(--primary)" style={{ opacity: 0.6, marginBottom: 10 }} />
             <h4 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-main)', marginBottom: 6 }}>
-              {filterMode === 'default'
+              {searchQuery
+                ? `Không tìm thấy đơn hàng nào khớp với từ khóa "${searchQuery}"`
+                : statusFilter !== 'all'
+                ? `Không có đơn hàng nào ở trạng thái "${getStatusInfo(statusFilter).label}" trong khoảng ngày đã chọn`
+                : filterMode === 'default'
                 ? `Không có đơn hoa nào hẹn lấy trong Hôm nay (${todayStr}) và Ngày mai (${tomorrowStr})`
                 : filterMode === 'custom'
                 ? `Không có đơn hoa nào hẹn giao vào ngày ${customDate}`
                 : 'Không có đơn hàng nào phù hợp với bộ lọc'}
             </h4>
             <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>
-              Bạn có thể chọn xem đợt cao điểm 20/10 hoặc xem tất cả các ngày khác trong hệ thống.
+              {searchQuery || statusFilter !== 'all'
+                ? 'Hãy thử thay đổi từ khóa tìm kiếm hoặc chọn xem Tất cả trạng thái đơn.'
+                : 'Bạn có thể chọn xem đợt cao điểm 20/10 hoặc xem tất cả các ngày khác trong hệ thống.'}
             </p>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+              {(searchQuery || statusFilter !== 'all' || filterMode !== 'default') && (
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={handleResetFilters}
+                >
+                  <RotateCcw size={13} />
+                  <span>Khôi phục bộ lọc mặc định</span>
+                </button>
+              )}
               <button
                 type="button"
                 className="btn btn-primary btn-sm"
                 onClick={() => {
                   setFilterMode('all');
                   setCustomDate('');
+                  setStatusFilter('all');
+                  setSearchQuery('');
                 }}
               >
-                Xem tất cả các ngày ({counts.all} đơn)
+                Xem tất cả các ngày ({dateCounts.all} đơn)
               </button>
               <button
                 type="button"
@@ -281,22 +532,24 @@ export default function Timeline({ orders, onUpdateStatus, onOpenGallery }) {
                 onClick={() => {
                   setFilterMode('oct20');
                   setCustomDate('');
+                  setStatusFilter('all');
+                  setSearchQuery('');
                 }}
               >
                 <Flame size={13} color="#f97316" />
-                <span>Xem đợt 20/10 ({counts.oct20} đơn)</span>
+                <span>Xem đợt 20/10 ({dateCounts.oct20} đơn)</span>
               </button>
             </div>
           </div>
         )}
 
-        {grouped.map(([date, dateOrders]) => {
-          const sorted = sortByTime(dateOrders);
+        {grouped.map(({ date, metrics, visibleOrders }) => {
+          const sorted = sortByTime(visibleOrders);
           const peak = isPeakDay(date);
 
           return (
             <div key={date} className="timeline-day-group" style={{ marginBottom: 28 }}>
-              {/* Date Header */}
+              {/* Date Header with Comprehensive Daily KPI Chips */}
               <div style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 14,
                 padding: '12px 18px',
@@ -316,29 +569,39 @@ export default function Timeline({ orders, onUpdateStatus, onOpenGallery }) {
                       {date} {peak && '— Ngày Phụ Nữ Việt Nam 20/10'}
                     </strong>
                     <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
-                      {dateOrders.length} đơn hàng · {formatMoney(dateOrders.reduce((s, o) => s + o.totalAmount, 0))}
+                      {metrics.totalOrders} đơn hàng · {formatMoney(metrics.totalAmount)}
                     </div>
                   </div>
                 </div>
 
-                {/* Prominent Daily Bouquet Summary Badge */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                  <span style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    background: 'var(--bg-surface)',
-                    padding: '6px 14px',
-                    borderRadius: 8,
-                    fontSize: 13,
-                    fontWeight: 700,
-                    color: 'var(--primary)',
-                    border: '1px solid var(--border-color)',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
-                  }}>
-                    <Package size={15} color="var(--primary)" />
-                    <span>Tổng ngày: <strong style={{ fontSize: 14, color: peak ? '#b45309' : 'var(--primary)' }}>{dateOrders.reduce((s, ord) => s + (parseInt(ord.quantity, 10) || 1), 0)} bó hoa</strong></span>
+                {/* Daily KPI Summary Chips */}
+                <div className="daily-kpi-chips">
+                  <span className="daily-kpi-chip bouquets" title="Tổng số lượng hoa cần cắm trong ngày">
+                    <Package size={13} color="var(--primary)" />
+                    <span>Tổng: <strong style={{ color: peak ? '#b45309' : 'var(--primary)' }}>{metrics.totalBouquets} bó</strong></span>
                   </span>
+
+                  <span className="daily-kpi-chip pending" title="Đơn đang chờ thợ cắm hoa">
+                    <Clock size={12} />
+                    <span>{metrics.pendingCount} chờ cắm</span>
+                  </span>
+
+                  <span className="daily-kpi-chip ready" title="Đơn đã cắm xong, sẵn sàng giao">
+                    <Sparkles size={12} />
+                    <span>{metrics.readyCount} đã cắm</span>
+                  </span>
+
+                  <span className="daily-kpi-chip completed" title="Đơn đã giao thành công">
+                    <CheckCircle2 size={12} />
+                    <span>{metrics.completedCount} đã giao</span>
+                  </span>
+
+                  {metrics.cancelledCount > 0 && (
+                    <span className="daily-kpi-chip cancelled" title="Đơn đã bị hủy">
+                      <AlertCircle size={12} />
+                      <span>{metrics.cancelledCount} đã hủy</span>
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -348,19 +611,23 @@ export default function Timeline({ orders, onUpdateStatus, onOpenGallery }) {
                   const { className: statusClass } = getStatusInfo(o.status);
                   const hasImages = o.images && o.images.length > 0;
                   const qty = parseInt(o.quantity, 10) || 1;
+                  const isCancelled = o.status === 'cancelled';
+
                   return (
                     <div key={o.id} className="timeline-order-card" style={{
                       display: 'flex', flexWrap: 'wrap', gap: 12, padding: '14px 16px',
                       background: 'var(--bg-surface)', borderRadius: 12,
-                      border: '1px solid var(--border-color)',
-                      opacity: o.status === 'completed' ? 0.75 : 1,
+                      border: isCancelled ? '1px dashed #fca5a5' : '1px solid var(--border-color)',
+                      opacity: isCancelled ? 0.65 : o.status === 'completed' ? 0.8 : 1,
                       alignItems: 'flex-start',
                     }}>
                       {/* Time Column */}
                       <div style={{ minWidth: 64, textAlign: 'center', padding: '6px 8px', background: 'var(--bg-app)', borderRadius: 8, flexShrink: 0 }}>
                         {o.deliveryTime ? (
                           <>
-                            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--primary)' }}>{o.deliveryTime}</div>
+                            <div style={{ fontSize: 14, fontWeight: 700, color: isCancelled ? 'var(--text-muted)' : 'var(--primary)' }}>
+                              {o.deliveryTime}
+                            </div>
                             <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>giờ hẹn</div>
                           </>
                         ) : (
@@ -405,7 +672,7 @@ export default function Timeline({ orders, onUpdateStatus, onOpenGallery }) {
                           <span className="order-stt-badge" style={{ margin: 0, fontWeight: 800 }}>
                             #{orderIndex + 1}
                           </span>
-                          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--primary)' }}>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: isCancelled ? 'var(--text-muted)' : 'var(--primary)' }}>
                             {o.id}
                           </span>
 
@@ -442,7 +709,9 @@ export default function Timeline({ orders, onUpdateStatus, onOpenGallery }) {
 
                         {/* Customer Info */}
                         <div style={{ fontSize: 14.5, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                          <span>{o.customerName}</span>
+                          <span style={{ textDecoration: isCancelled ? 'line-through' : 'none' }}>
+                            {o.customerName}
+                          </span>
                           {o.phone && (
                             <a
                               href={`tel:${o.phone}`}
@@ -466,10 +735,10 @@ export default function Timeline({ orders, onUpdateStatus, onOpenGallery }) {
                         {/* Flower Product Name & Quantity */}
                         <div style={{ fontSize: 13.5, color: 'var(--text-main)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600, flexWrap: 'wrap' }}>
                           <Flower2 size={14} color="var(--primary)" />
-                          <span style={{ fontWeight: 700 }}>{o.productName}</span>
-                          <span
-                            className={`timeline-qty-badge ${qty > 1 ? 'multiple' : 'single'}`}
-                          >
+                          <span style={{ fontWeight: 700, textDecoration: isCancelled ? 'line-through' : 'none' }}>
+                            {o.productName}
+                          </span>
+                          <span className={`timeline-qty-badge ${qty > 1 ? 'multiple' : 'single'}`}>
                             {qty > 1 ? `Số lượng: ${qty} bó` : '1 bó hoa'}
                           </span>
                         </div>
@@ -499,8 +768,10 @@ export default function Timeline({ orders, onUpdateStatus, onOpenGallery }) {
 
                       {/* Money & Delivery Column */}
                       <div style={{ textAlign: 'right', marginLeft: 'auto', minWidth: 100, flexShrink: 0 }}>
-                        <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-main)' }}>{formatMoney(o.totalAmount)}</div>
-                        {o.remainingAmount > 0 && (
+                        <div style={{ fontSize: 14, fontWeight: 700, color: isCancelled ? 'var(--text-muted)' : 'var(--text-main)', textDecoration: isCancelled ? 'line-through' : 'none' }}>
+                          {formatMoney(o.totalAmount)}
+                        </div>
+                        {o.remainingAmount > 0 && !isCancelled && (
                           <div style={{ fontSize: 11.5, color: '#e11d48', marginTop: 2, fontWeight: 700 }}>
                             Còn: {formatMoney(o.remainingAmount)}
                           </div>
