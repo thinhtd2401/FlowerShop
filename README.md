@@ -23,53 +23,55 @@ npm run dev
 - **Frontend Web (Vite)**: [http://localhost:5173](http://localhost:5173)
 - Giao diện console hiển thị song song log của Backend (màu xanh lá) và Frontend (màu xanh dương).
 
-### 3. Chạy toàn bộ hệ thống + Mở đường hầm Ngrok ra Internet
+### 3. Chạy toàn bộ hệ thống + Mở đường hầm Cloudflare Tunnel ra Internet
 ```bash
 npm run dev:all
 ```
 > Hoặc trên Windows: **Click đúp vào file `start-all.bat`**
-- Chạy đồng thời: Backend (3001) + Frontend (5173) + Ngrok Tunnel kết nối tên miền công khai.
-- Truy cập trực tiếp từ điện thoại hoặc mạng ngoài: **https://wimp-crumb-language.ngrok-free.dev**
+- Chạy đồng thời: Backend (3001) + Frontend (5173) + Cloudflare Quick Tunnel kết nối toàn cầu.
+- Đường dẫn công khai tự động hiển thị trong terminal (dạng `https://*.trycloudflare.com`) và được lưu vào file `public-url.txt`.
+- **Ưu điểm vượt trội so với Ngrok**: **Hoàn toàn miễn phí, không giới hạn băng thông (1GB limit của Ngrok), không có màn hình cảnh báo trung gian**.
 
 ---
 
-## 🌐 Hướng Dẫn Chi Tiết Cấu Hình & Chạy Proxy Qua Ngrok
+## 🌐 Hướng Dẫn Chi Tiết Cấu Hình & Chạy Đường Hầm Cloudflare Tunnel
 
-Dự án sử dụng tên miền cố định miễn phí của Ngrok:
-👉 **`https://wimp-crumb-language.ngrok-free.dev`**
+Dự án sử dụng giải pháp **Cloudflare Quick Tunnel (TryCloudflare)** để đưa toàn bộ hệ thống ra ngoài Internet:
 
-### 1. Lệnh chạy đường hầm Ngrok riêng lẻ
-Nếu bạn đã khởi chạy `npm run dev` ở một terminal khác và chỉ muốn mở thêm ngrok tunnel:
+### 1. Khởi chạy đường hầm riêng lẻ
+Nếu bạn đã khởi chạy `npm run dev` ở một terminal khác và chỉ muốn mở đường hầm trực tuyến:
 ```bash
 npm run tunnel
 ```
 Hoặc chạy trực tiếp file thực thi có sẵn trong dự án:
 ```powershell
-.\ngrok.exe http --domain=wimp-crumb-language.ngrok-free.dev 5173
+.\cloudflared.exe tunnel --url http://localhost:5173
 ```
+Terminal sẽ tự động in ra URL trực tuyến dạng:
+👉 **`https://[subdomain].trycloudflare.com`** đồng thời lưu tự động vào file `public-url.txt`.
 
 ### 2. Cơ chế hoạt động của Reverse Proxy (Tại sao map vào cổng 5173?)
 Trong kiến trúc của Floral Studio:
 ```
 [ Khách hàng / Điện thoại ngoài Internet ]
                  │
-                 ▼ (HTTPS)
-   https://wimp-crumb-language.ngrok-free.dev
+                 ▼ (HTTPS qua Cloudflare CDN)
+    https://*.trycloudflare.com
                  │
-                 ▼ (Ngrok Tunnel)
+                 ▼ (Cloudflare Tunnel)
     Vite Dev Server (Port 5173) ──► Phục vụ giao diện React SPA
                  │
                  ├──► /api/*       ──(Proxy nội bộ)──► Express Backend (Port 3001)
                  └──► /uploads/*   ──(Proxy nội bộ)──► Static Flower Images (Port 3001)
 ```
 
-- **Ngrok trỏ thẳng vào cổng 5173 (Frontend)**: Khi người dùng truy cập từ xa, họ sẽ tải mã nguồn giao diện React, icon SVG Lucide, font chữ và CSS từ Vite.
+- **Cloudflare trỏ thẳng vào cổng 5173 (Frontend)**: Khi người dùng truy cập từ xa, họ sẽ tải mã nguồn giao diện React, icon SVG Lucide, font chữ và CSS từ Vite.
 - **Vite Proxy tự động chuyển tiếp API & Ảnh**: Trong file `client/vite.config.js`:
   ```javascript
   server: {
     host: true,
     port: 5173,
-    allowedHosts: true, // Cho phép tên miền ngrok truy cập không bị lỗi Invalid Host
+    allowedHosts: true, // Cho phép tên miền bên ngoài truy cập không bị lỗi Invalid Host
     proxy: {
       '/api': {
         target: 'http://localhost:3001',
@@ -83,14 +85,12 @@ Trong kiến trúc của Floral Studio:
   }
   ```
   Nhờ cấu hình này, mọi request API (`/api/orders`, `/api/metrics`, `/api/expenses`) và hình ảnh upload (`/uploads/...`) đều được Vite âm thầm chuyển tiếp sang Express API (cổng 3001).
-- **Lợi ích**: Không gặp vấn đề CORS, không cần mở nhiều cổng ngrok cùng lúc, chỉ cần 1 URL duy nhất là sử dụng được toàn bộ tính năng.
+- **Lợi ích**: Không gặp vấn đề CORS, không cần mở nhiều cổng cùng lúc, chỉ cần 1 URL duy nhất là sử dụng được toàn bộ tính năng.
 
-### 3. Lưu ý quan trọng khi dùng Ngrok
-- **Lỗi trùng phiên (ERR_NGROK_324)**: Gói Free của Ngrok chỉ cho phép 1 session kết nối tới 1 static domain tại một thời điểm. Nếu báo lỗi domain đang bị chiếm giữ, bạn chỉ cần kiểm tra và tắt (Ctrl + C) terminal ngrok cũ đang chạy ngầm.
-- **Thiết lập Token (nếu chạy trên máy tính mới)**:
-  ```bash
-  .\ngrok.exe config add-authtoken <YOUR_AUTHTOKEN>
-  ```
+### 3. Ưu Điểm Tuyệt Đối Của Cloudflare So Với Ngrok
+- **Không giới hạn băng thông**: Không bao giờ lo bị cắt mạng vì vượt quá quota 1GB/tháng.
+- **Không có màn hình cảnh báo**: Khách hàng bấm link là vào thẳng giao diện đặt hàng/xem tiến độ mượt mà.
+- **Không cần tài khoản hay cấu hình token phức tạp**.
 
 ---
 
@@ -99,8 +99,10 @@ Trong kiến trúc của Floral Studio:
 | Lệnh | Mô tả |
 | :--- | :--- |
 | `npm run dev` | **Chạy cả Backend (3001) và Frontend (5173)** bằng 1 lệnh qua `concurrently` |
-| `npm run dev:all` | **Chạy cả 3 dịch vụ**: Backend + Frontend + Ngrok Tunnel |
-| `npm run tunnel` | Khởi chạy đường hầm Ngrok tới domain `wimp-crumb-language.ngrok-free.dev` |
+| `npm run dev:all` | **Chạy cả 3 dịch vụ**: Backend + Frontend + Cloudflare Tunnel |
+| `npm run tunnel` | Khởi chạy Cloudflare Quick Tunnel (Mặc định) |
+| `npm run tunnel:cf` | Khởi chạy Cloudflare Quick Tunnel |
+| `npm run tunnel:ngrok` | Khởi chạy Ngrok Tunnel (Dự phòng) |
 | `npm run server` | Chạy riêng Backend Express API (chế độ `--watch` tự reload khi sửa code) |
 | `npm run client` | Chạy riêng Frontend Vite React Dev Server |
 | `npm run install:all` | Tự động `npm install` cho thư mục gốc, thư mục `server/` và `client/` |
@@ -150,4 +152,4 @@ Trong kiến trúc của Floral Studio:
 
 ### Mạng & Triển Khai
 - **Concurrently**: Quản lý chạy song song nhiều tiến trình trong 1 terminal duy nhất.
-- **Ngrok**: Đặt đường hầm an toàn đưa localhost ra Internet với tên miền cố định.
+- **Cloudflare Tunnel (cloudflared)**: Đường hầm bảo mật HTTPS đưa localhost ra toàn cầu không giới hạn băng thông.

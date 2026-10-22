@@ -5,15 +5,16 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>Floral Studio - Quản Lý Đơn Hoa & Chi Phí Vốn</title>
-    <!-- Ngrok & Remote Device HMR WebSocket Fix -->
+    <!-- Cloudflare & Remote Device HMR WebSocket Fix -->
     <script>
       (function() {
         try {
-          var isNgrokOrRemote = window.location.hostname.includes('ngrok') ||
-                                (window.location.protocol === 'https:' && !window.location.hostname.includes('localhost'));
+          var isRemoteTunnel = window.location.hostname.includes('trycloudflare') ||
+                               window.location.hostname.includes('ngrok') ||
+                               (window.location.protocol === 'https:' && !window.location.hostname.includes('localhost'));
 
-          if (isNgrokOrRemote) {
-            // 1. Intercept WebSocket to fix URL and port on Ngrok / HTTPS
+          if (isRemoteTunnel) {
+            // 1. Intercept WebSocket to fix URL and port on Cloudflare Tunnel / HTTPS
             var OriginalWebSocket = window.WebSocket;
             window.WebSocket = function(url, protocols) {
               if (typeof url === 'string') {
@@ -31,7 +32,7 @@
 
               var ws = new OriginalWebSocket(url, protocols);
 
-              // 2. Active Heartbeat every 10s to keep ngrok tunnel alive & prevent 30s idle disconnect
+              // 2. Active Heartbeat every 10s to keep tunnel connection alive & prevent idle disconnect
               var pingInterval = setInterval(function() {
                 if (ws.readyState === WebSocket.OPEN) {
                   try {
@@ -46,15 +47,15 @@
             };
             window.WebSocket.prototype = OriginalWebSocket.prototype;
 
-            // 3. Keep-alive HTTP ping every 20s for Ngrok free tunnel
+            // 3. Keep-alive HTTP ping every 20s for remote tunnel
             setInterval(function() {
               fetch('/api/health').catch(function() {});
             }, 20000);
 
-            console.log('🌸 [Floral Studio] Ngrok HMR & WebSocket keep-alive active.');
+            console.log('🌸 [Floral Studio] Cloudflare Tunnel HMR & WebSocket keep-alive active.');
           }
         } catch (e) {
-          console.warn('[Floral Studio] Ngrok HMR setup error:', e);
+          console.warn('[Floral Studio] Remote Tunnel HMR setup error:', e);
         }
       })();
     </script>

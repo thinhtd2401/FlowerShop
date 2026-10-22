@@ -24,3 +24,7 @@ Thumbs.db
 .vscode/
 .idea/
 
+# Temporary tunnel files
+public-url.txt
+ngrok.exe
+
