@@ -4,6 +4,12 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db/database');
+const { authenticateToken } = require('../middleware/auth');
+const { requirePermission } = require('../middleware/rbac');
+
+// Bảo vệ tất cả endpoints của expenses: Yêu cầu đăng nhập và có quyền 'expenses'
+router.use(authenticateToken);
+router.use(requirePermission('expenses'));
 
 function rowToExpense(row) {
   if (!row) return null;

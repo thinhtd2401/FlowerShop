@@ -4,6 +4,26 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db/database');
+const { authenticateToken } = require('../middleware/auth');
+
+// Bảo vệ tất cả endpoints của đơn hàng bằng authenticateToken
+router.use(authenticateToken);
+
+// Middleware kiểm tra quyền xem đơn hàng (admin, manager, hoặc nhân viên có quyền orders hoặc timeline)
+const requireOrderViewPermission = (req, res, next) => {
+  if (['admin', 'manager'].includes(req.user.role)) return next();
+  const perms = req.user.permissions || [];
+  if (perms.includes('orders') || perms.includes('timeline')) return next();
+  return res.status(403).json({ error: 'Bạn không có quyền xem thông tin đơn hàng' });
+};
+
+// Middleware kiểm tra quyền chỉnh sửa/quản lý đơn hàng (admin, manager hoặc quyền orders)
+const requireOrderManagePermission = (req, res, next) => {
+  if (['admin', 'manager'].includes(req.user.role)) return next();
+  const perms = req.user.permissions || [];
+  if (perms.includes('orders')) return next();
+  return res.status(403).json({ error: 'Bạn không có quyền tạo hoặc chỉnh sửa đơn hàng' });
+};
 
 // Helper: safely parse JSON images array
 function parseImages(imagesVal) {
@@ -47,7 +67,7 @@ function rowToOrder(row) {
 }
 
 // GET /api/orders - Lấy tất cả đơn hàng
-router.get('/', (req, res) => {
+router.get('/', requireOrderViewPermission, (req, res) => {
   try {
     const rows = db.prepare('SELECT * FROM orders ORDER BY created_at DESC').all();
     res.json(rows.map(rowToOrder));
@@ -57,7 +77,7 @@ router.get('/', (req, res) => {
 });
 
 // GET /api/orders/:id - Lấy 1 đơn
-router.get('/:id', (req, res) => {
+router.get('/:id', requireOrderViewPermission, (req, res) => {
   try {
     const row = db.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id);
     if (!row) return res.status(404).json({ error: 'Không tìm thấy đơn hàng' });
@@ -68,7 +88,7 @@ router.get('/:id', (req, res) => {
 });
 
 // POST /api/orders - Tạo đơn mới
-router.post('/', (req, res) => {
+router.post('/', requireOrderManagePermission, (req, res) => {
   try {
     const data = req.body;
 
@@ -127,7 +147,7 @@ router.post('/', (req, res) => {
 });
 
 // PUT /api/orders/:id - Cập nhật đơn
-router.put('/:id', (req, res) => {
+router.put('/:id', requireOrderManagePermission, (req, res) => {
   try {
     const { id } = req.params;
     const existing = db.prepare('SELECT * FROM orders WHERE id = ?').get(id);
@@ -180,7 +200,7 @@ router.put('/:id', (req, res) => {
 });
 
 // PATCH /api/orders/:id/images - Cập nhật riêng danh sách ảnh
-router.patch('/:id/images', (req, res) => {
+router.patch('/:id/images', requireOrderViewPermission, (req, res) => {
   try {
     const { id } = req.params;
     const { images } = req.body;
@@ -198,7 +218,7 @@ router.patch('/:id/images', (req, res) => {
 });
 
 // PATCH /api/orders/:id/status - Đổi trạng thái nhanh
-router.patch('/:id/status', (req, res) => {
+router.patch('/:id/status', requireOrderViewPermission, (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
@@ -220,7 +240,7 @@ router.patch('/:id/status', (req, res) => {
 });
 
 // DELETE /api/orders/:id - Xóa đơn
-router.delete('/:id', (req, res) => {
+router.delete('/:id', requireOrderManagePermission, (req, res) => {
   try {
     const result = db.prepare('DELETE FROM orders WHERE id = ?').run(req.params.id);
     if (result.changes === 0) return res.status(404).json({ error: 'Không tìm thấy đơn hàng' });

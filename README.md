@@ -28,27 +28,23 @@ npm run dev
 npm run dev:all
 ```
 > Hoặc trên Windows: **Click đúp vào file `start-all.bat`**
-- Chạy đồng thời: Backend (3001) + Frontend (5173) + Cloudflare Quick Tunnel kết nối toàn cầu.
-- Đường dẫn công khai tự động hiển thị trong terminal (dạng `https://*.trycloudflare.com`) và được lưu vào file `public-url.txt`.
-- **Ưu điểm vượt trội so với Ngrok**: **Hoàn toàn miễn phí, không giới hạn băng thông (1GB limit của Ngrok), không có màn hình cảnh báo trung gian**.
+- Chạy đồng thời: Backend (3001) + Frontend (5173) + Cloudflare Tunnel kết nối tên miền cố định **`https://khflowershop.store`**.
+- Đường dẫn công khai tự động hiển thị trong terminal và được lưu vào file `public-url.txt`.
+- **Ưu điểm vượt trội so với Ngrok**: **Hoàn toàn miễn phí, không giới hạn băng thông, tên miền thương hiệu riêng cố định**.
 
 ---
 
 ## 🌐 Hướng Dẫn Chi Tiết Cấu Hình & Chạy Đường Hầm Cloudflare Tunnel
 
-Dự án sử dụng giải pháp **Cloudflare Quick Tunnel (TryCloudflare)** để đưa toàn bộ hệ thống ra ngoài Internet:
+Dự án sử dụng giải pháp **Cloudflare Tunnel (Custom Domain)** kết nối trực tiếp tên miền `khflowershop.store` ra ngoài Internet:
 
 ### 1. Khởi chạy đường hầm riêng lẻ
-Nếu bạn đã khởi chạy `npm run dev` ở một terminal khác và chỉ muốn mở đường hầm trực tuyến:
+Nếu bạn đã khởi chạy `npm run dev` ở một terminal khác và chỉ muốn kích hoạt thông tin đường hầm:
 ```bash
 npm run tunnel
 ```
-Hoặc chạy trực tiếp file thực thi có sẵn trong dự án:
-```powershell
-.\cloudflared.exe tunnel --url http://localhost:5173
-```
-Terminal sẽ tự động in ra URL trực tuyến dạng:
-👉 **`https://[subdomain].trycloudflare.com`** đồng thời lưu tự động vào file `public-url.txt`.
+Terminal sẽ in ra thông tin kết nối và lưu URL vào file `public-url.txt`:
+👉 **`https://khflowershop.store`**
 
 ### 2. Cơ chế hoạt động của Reverse Proxy (Tại sao map vào cổng 5173?)
 Trong kiến trúc của KHflower Shop:
@@ -56,7 +52,7 @@ Trong kiến trúc của KHflower Shop:
 [ Khách hàng / Điện thoại ngoài Internet ]
                  │
                  ▼ (HTTPS qua Cloudflare CDN)
-    https://*.trycloudflare.com
+    https://khflowershop.store
                  │
                  ▼ (Cloudflare Tunnel)
     Vite Dev Server (Port 5173) ──► Phục vụ giao diện React SPA

@@ -4,12 +4,16 @@
 import { useState, useEffect, useCallback } from 'react';
 import { expensesApi } from '../api';
 
-export function useExpenses() {
+export function useExpenses(enabled = true) {
   const [expenses, setExpenses] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(enabled);
   const [error, setError] = useState(null);
 
   const fetchExpenses = useCallback(async () => {
+    if (!enabled) {
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       const data = await expensesApi.getAll();
@@ -20,9 +24,15 @@ export function useExpenses() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [enabled]);
 
-  useEffect(() => { fetchExpenses(); }, [fetchExpenses]);
+  useEffect(() => {
+    if (enabled) {
+      fetchExpenses();
+    } else {
+      setLoading(false);
+    }
+  }, [fetchExpenses, enabled]);
 
   const createExpense = async (data) => {
     const newExp = await expensesApi.create(data);

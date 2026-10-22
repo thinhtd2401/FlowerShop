@@ -51,6 +51,21 @@ db.exec(`
     total_cost INTEGER DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
+
+  CREATE TABLE IF NOT EXISTS users (
+    id TEXT PRIMARY KEY,
+    email TEXT UNIQUE NOT NULL,
+    name TEXT NOT NULL,
+    password_hash TEXT,
+    avatar TEXT DEFAULT '',
+    auth_provider TEXT DEFAULT 'email',
+    google_id TEXT,
+    role TEXT DEFAULT 'staff',
+    permissions TEXT DEFAULT '["orders","timeline"]',
+    status TEXT DEFAULT 'active',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    last_login_at DATETIME
+  );
 `);
 
 // Safe migrations for new fields

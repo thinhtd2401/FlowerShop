@@ -1,7 +1,7 @@
 /**
- * App.jsx - Root component with layout, routing, and state management
+ * App.jsx - Root component with authentication, RBAC layout, routing, and state management
  */
-import { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Plus, Loader2 } from 'lucide-react';
 import Sidebar from './components/Layout/Sidebar';
 import Header from './components/Layout/Header';
@@ -14,6 +14,9 @@ import Dashboard from './pages/Dashboard';
 import Orders from './pages/Orders';
 import Timeline from './pages/Timeline';
 import Expenses from './pages/Expenses';
+import UserManagement from './pages/UserManagement';
+import LoginPage from './pages/LoginPage';
+import { useAuth } from './hooks/useAuth';
 import { useOrders } from './hooks/useOrders';
 import { useExpenses } from './hooks/useExpenses';
 import { exportToExcel } from './utils/exportExcel';
@@ -24,7 +27,19 @@ import {
 } from './utils/orderDraft';
 
 export default function App() {
-  const [currentView, setCurrentView] = useState('dashboard');
+  const { user, isAuthenticated, loading: authLoading, hasPermission, getDefaultScreen } = useAuth();
+  const { showToast } = useToast();
+
+  const [currentView, setCurrentView] = useState(() => {
+    try {
+      const stored = localStorage.getItem('flowershop_user');
+      const u = stored ? JSON.parse(stored) : null;
+      if (u?.role === 'admin' || u?.role === 'manager') return 'dashboard';
+      if (u?.permissions?.includes('orders')) return 'orders';
+      if (u?.permissions?.includes('timeline')) return 'timeline';
+    } catch {}
+    return 'orders';
+  });
   const [searchQuery, setSearchQuery] = useState('');
   const [orderModalOpen, setOrderModalOpen] = useState(() => {
     return shouldAutoRestoreOrderModal();
@@ -60,9 +75,21 @@ export default function App() {
     });
   }, []);
 
-  const { showToast } = useToast();
-  const { orders, loading: ordersLoading, createOrder, updateOrder, updateStatus, updateImages, deleteOrder } = useOrders();
-  const { expenses, loading: expensesLoading, createExpense, updateExpense, deleteExpense } = useExpenses();
+  // Update default view only when authentication status or user role changes
+  useEffect(() => {
+    if (isAuthenticated) {
+      if (!hasPermission(currentView)) {
+        setCurrentView(getDefaultScreen());
+      }
+    }
+  }, [isAuthenticated, user?.id, user?.role, JSON.stringify(user?.permissions)]);
+
+  // Screen permission flags for API hooks
+  const canViewOrders = hasPermission('orders') || hasPermission('timeline') || hasPermission('dashboard');
+  const canViewExpenses = hasPermission('expenses') || hasPermission('dashboard');
+
+  const { orders, loading: ordersLoading, createOrder, updateOrder, updateStatus, updateImages, deleteOrder } = useOrders(canViewOrders);
+  const { expenses, loading: expensesLoading, createExpense, updateExpense, deleteExpense } = useExpenses(canViewExpenses);
 
   const handleExportExcel = useCallback(() => {
     try {
@@ -72,8 +99,6 @@ export default function App() {
       showToast('Lỗi khi xuất file Excel', 'error');
     }
   }, [orders, expenses, showToast]);
-
-  const pendingCount = orders.filter(o => o.status === 'pending').length;
 
   const handleOpenAddOrder = useCallback(() => {
     setEditingOrder(null);
@@ -182,20 +207,53 @@ export default function App() {
     }
   }, [updateImages, showToast]);
 
+  // Loading state while checking authentication
+  if (authLoading) {
+    return (
+      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, background: 'var(--bg-app)' }}>
+        <Loader2 className="animate-spin" size={36} color="var(--primary)" />
+        <span style={{ color: 'var(--text-muted)', fontSize: 15, fontWeight: 500 }}>
+          Đang khởi động hệ thống KHflower Shop...
+        </span>
+      </div>
+    );
+  }
+
+  // If not authenticated, render Login Page
+  if (!isAuthenticated) {
+    return (
+      <>
+        <LoginPage />
+        <ToastContainer />
+      </>
+    );
+  }
+
   const renderCurrentView = () => {
-    if (ordersLoading && currentView !== 'expenses') {
+    if (ordersLoading && (currentView === 'orders' || currentView === 'timeline')) {
       return (
         <div style={{ padding: 60, textAlign: 'center', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
           <Loader2 className="animate-spin" size={24} color="var(--primary)" />
-          <span>Đang tải dữ liệu...</span>
+          <span>Đang tải dữ liệu đơn hàng...</span>
+        </div>
+      );
+    }
+
+    if (expensesLoading && currentView === 'expenses') {
+      return (
+        <div style={{ padding: 60, textAlign: 'center', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+          <Loader2 className="animate-spin" size={24} color="var(--primary)" />
+          <span>Đang tải dữ liệu chi phí...</span>
         </div>
       );
     }
 
     switch (currentView) {
       case 'dashboard':
+        if (!hasPermission('dashboard')) return null;
         return <Dashboard onNavigate={setCurrentView} refreshTrigger={refreshTrigger} />;
       case 'orders':
+        if (!hasPermission('orders')) return null;
         return (
           <Orders
             orders={orders}
@@ -207,6 +265,7 @@ export default function App() {
           />
         );
       case 'timeline':
+        if (!hasPermission('timeline')) return null;
         return (
           <Timeline
             orders={orders}
@@ -215,6 +274,7 @@ export default function App() {
           />
         );
       case 'expenses':
+        if (!hasPermission('expenses')) return null;
         return (
           <Expenses
             expenses={expenses}
@@ -222,6 +282,9 @@ export default function App() {
             onDeleteExpense={handleDeleteExpense}
           />
         );
+      case 'users':
+        if (!hasPermission('users')) return null;
+        return <UserManagement showToast={showToast} />;
       default:
         return null;
     }
@@ -238,6 +301,7 @@ export default function App() {
       <div className="main-wrapper">
         <Header
           currentView={currentView}
+          onNavigate={setCurrentView}
           onSearch={setSearchQuery}
           onAddOrder={handleOpenAddOrder}
           onAddExpense={handleOpenAddExpense}
@@ -256,11 +320,13 @@ export default function App() {
       {/* Mobile Navigation */}
       <MobileNav currentView={currentView} onNavigate={setCurrentView} />
 
-      {/* Mobile FAB */}
-      <button className="mobile-fab" id="mobileFabOrder" onClick={handleOpenAddOrder} title="Tạo đơn hàng mới">
-        <Plus size={18} />
-        <span>Tạo đơn</span>
-      </button>
+      {/* Mobile FAB - Only visible if has orders permission */}
+      {hasPermission('orders') && (
+        <button className="mobile-fab" id="mobileFabOrder" onClick={handleOpenAddOrder} title="Tạo đơn hàng mới">
+          <Plus size={18} />
+          <span>Tạo đơn</span>
+        </button>
+      )}
 
       {/* Modals */}
       <OrderModal

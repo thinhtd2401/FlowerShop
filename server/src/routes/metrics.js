@@ -4,6 +4,12 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db/database');
+const { authenticateToken } = require('../middleware/auth');
+const { requireRole } = require('../middleware/rbac');
+
+// Bảo vệ: Chỉ Admin và Quản trị mới được truy cập dữ liệu KPI tổng quan
+router.use(authenticateToken);
+router.use(requireRole(['admin', 'manager']));
 
 // GET /api/metrics - Tính toán KPI dashboard
 router.get('/', (req, res) => {

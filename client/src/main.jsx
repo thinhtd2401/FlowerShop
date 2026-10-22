@@ -1,10 +1,18 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import App from './App.jsx'
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import { GoogleOAuthProvider } from '@react-oauth/google';
+import './index.css';
+import App from './App.jsx';
+import { AuthProvider } from './context/AuthContext';
+
+const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || 'demo-client-id-khflowershop';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <App />
+    <GoogleOAuthProvider clientId={googleClientId}>
+      <AuthProvider>
+        <App />
+      </AuthProvider>
+    </GoogleOAuthProvider>
   </StrictMode>,
-)
+);

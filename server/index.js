@@ -1,6 +1,7 @@
 /**
  * index.js - Express API Server Entry Point
  */
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -25,6 +26,8 @@ if (!fs.existsSync(uploadDir)) {
 app.use('/uploads', express.static(uploadDir));
 
 // Routes
+app.use('/api/auth', require('./src/routes/auth'));
+app.use('/api/users', require('./src/routes/users'));
 app.use('/api/orders', require('./src/routes/orders'));
 app.use('/api/expenses', require('./src/routes/expenses'));
 app.use('/api/metrics', require('./src/routes/metrics'));

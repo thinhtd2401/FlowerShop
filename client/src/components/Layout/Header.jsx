@@ -1,10 +1,24 @@
 /**
- * components/Layout/Header.jsx
+ * components/Layout/Header.jsx - App Top Header with User Profile & RBAC Action Controls
  */
-import { Flower2, Search, FileSpreadsheet, PlusCircle, Plus, Sun, Moon, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import React from 'react';
+import {
+  Flower2,
+  Search,
+  FileSpreadsheet,
+  PlusCircle,
+  Plus,
+  Sun,
+  Moon,
+  PanelLeftClose,
+  PanelLeftOpen
+} from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth';
+import UserMenu from './UserMenu';
 
 export default function Header({
   currentView,
+  onNavigate,
   onSearch,
   onAddOrder,
   onAddExpense,
@@ -14,14 +28,20 @@ export default function Header({
   sidebarCollapsed = false,
   onToggleSidebar
 }) {
+  const { hasPermission } = useAuth();
+
   const titles = {
     dashboard: { title: 'Tổng Quan Kinh Doanh', subtitle: 'Theo dõi doanh thu, chi phí vốn và tiến độ đơn hàng' },
     orders: { title: 'Quản Lý Đơn Hàng', subtitle: 'Theo dõi và xử lý tất cả đơn đặt hoa' },
     timeline: { title: 'Tiến Độ Cắm Hoa', subtitle: 'Lịch cắm và giao hoa theo ngày & khung giờ' },
     expenses: { title: 'Vốn & Chi Phí', subtitle: 'Quản lý chi phí nhập hàng và vật tư' },
+    users: { title: 'Quản Lý Thành Viên & Phân Quyền', subtitle: 'Phân quyền chi tiết cho nhân viên theo từng màn hình nghiệp vụ' },
   };
 
   const { title, subtitle } = titles[currentView] || titles.dashboard;
+
+  const canAddOrder = hasPermission('orders');
+  const canAddExpense = hasPermission('expenses');
 
   return (
     <header className="top-header">
@@ -54,17 +74,20 @@ export default function Header({
       </div>
 
       <div className="header-actions">
-        <div className="search-box">
-          <span className="search-icon">
-            <Search size={16} />
-          </span>
-          <input
-            type="text"
-            id="globalSearch"
-            placeholder="Tìm tên khách, SĐT, mẫu hoa..."
-            onChange={(e) => onSearch(e.target.value)}
-          />
-        </div>
+        {/* Search Bar - Hidden on Users view */}
+        {currentView !== 'users' && (
+          <div className="search-box">
+            <span className="search-icon">
+              <Search size={16} />
+            </span>
+            <input
+              type="text"
+              id="globalSearch"
+              placeholder="Tìm tên khách, SĐT, mẫu hoa..."
+              onChange={(e) => onSearch?.(e.target.value)}
+            />
+          </div>
+        )}
 
         {/* Theme Toggle (Dark / Light) */}
         <button
@@ -81,8 +104,8 @@ export default function Header({
           )}
         </button>
 
-        {/* Excel Export: Hidden on Dashboard view as requested */}
-        {currentView !== 'dashboard' && (
+        {/* Excel Export: Hidden on Dashboard and Users view */}
+        {currentView !== 'dashboard' && currentView !== 'users' && (
           <button
             type="button"
             className="btn btn-secondary"
@@ -94,16 +117,35 @@ export default function Header({
           </button>
         )}
 
-        <button id="btnAddExpense" className="btn btn-outline-primary" onClick={onAddExpense} title="Thêm khoản chi phí vốn">
-          <PlusCircle size={16} />
-          <span>Chi phí</span>
-        </button>
-        <button id="btnAddOrder" className="btn btn-primary" onClick={onAddOrder} title="Tạo đơn hàng mới">
-          <Plus size={16} />
-          <span>Tạo đơn mới</span>
-        </button>
+        {/* Add Expense Button - Protected by 'expenses' permission */}
+        {canAddExpense && (
+          <button
+            id="btnAddExpense"
+            className="btn btn-outline-primary"
+            onClick={onAddExpense}
+            title="Thêm khoản chi phí vốn"
+          >
+            <PlusCircle size={16} />
+            <span>Chi phí</span>
+          </button>
+        )}
+
+        {/* Add Order Button - Protected by 'orders' permission */}
+        {canAddOrder && (
+          <button
+            id="btnAddOrder"
+            className="btn btn-primary"
+            onClick={onAddOrder}
+            title="Tạo đơn hàng mới"
+          >
+            <Plus size={16} />
+            <span>Tạo đơn mới</span>
+          </button>
+        )}
+
+        {/* User Profile & Logout Menu */}
+        <UserMenu onNavigateToUsers={() => onNavigate?.('users')} />
       </div>
     </header>
   );
 }
-

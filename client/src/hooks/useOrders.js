@@ -4,12 +4,16 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ordersApi } from '../api';
 
-export function useOrders() {
+export function useOrders(enabled = true) {
   const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(enabled);
   const [error, setError] = useState(null);
 
   const fetchOrders = useCallback(async () => {
+    if (!enabled) {
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       const data = await ordersApi.getAll();
@@ -20,9 +24,15 @@ export function useOrders() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [enabled]);
 
-  useEffect(() => { fetchOrders(); }, [fetchOrders]);
+  useEffect(() => {
+    if (enabled) {
+      fetchOrders();
+    } else {
+      setLoading(false);
+    }
+  }, [fetchOrders, enabled]);
 
   const createOrder = async (data) => {
     const newOrder = await ordersApi.create(data);

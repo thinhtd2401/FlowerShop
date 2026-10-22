@@ -4,6 +4,7 @@
 const db = require('./database');
 const path = require('path');
 const fs = require('fs');
+const bcrypt = require('bcryptjs');
 
 // Load seed data from local seedData.json
 function loadSeedData() {
@@ -26,7 +27,51 @@ function loadSeedData() {
   }
 }
 
+function seedUsersIfEmpty() {
+  try {
+    const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get().count;
+    if (userCount === 0) {
+      console.log('🌱 Seeding initial admin and staff users...');
+      const adminPasswordHash = bcrypt.hashSync('admin123', 10);
+      const staffPasswordHash = bcrypt.hashSync('nhanvien123', 10);
+
+      const insertUser = db.prepare(`
+        INSERT INTO users (id, email, name, password_hash, role, permissions, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `);
+
+      // 1. Super Admin
+      insertUser.run(
+        'user_admin_01',
+        'admin@khflowershop.vn',
+        'Quản Trị Viên (Chủ Tiệm)',
+        adminPasswordHash,
+        'admin',
+        JSON.stringify(['orders', 'timeline', 'expenses']),
+        'active'
+      );
+
+      // 2. Sample Staff (for immediate testing of permissions)
+      insertUser.run(
+        'user_staff_01',
+        'nhanvien@khflowershop.vn',
+        'Thợ Cắm Hoa (Nhân viên mẫu)',
+        staffPasswordHash,
+        'staff',
+        JSON.stringify(['orders', 'timeline']),
+        'active'
+      );
+
+      console.log('✅ Created default admin (admin@khflowershop.vn / admin123) and staff (nhanvien@khflowershop.vn / nhanvien123).');
+    }
+  } catch (err) {
+    console.error('❌ Error seeding users:', err.message);
+  }
+}
+
 function seedIfEmpty() {
+  seedUsersIfEmpty();
+
   const orderCount = db.prepare('SELECT COUNT(*) as count FROM orders').get().count;
   const expenseCount = db.prepare('SELECT COUNT(*) as count FROM expenses').get().count;
 

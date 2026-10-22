@@ -6,6 +6,10 @@ const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const { authenticateToken } = require('../middleware/auth');
+
+// Bảo vệ upload endpoint bằng authenticateToken
+router.use(authenticateToken);
 
 const uploadDir = path.join(__dirname, '../../data/uploads');
 if (!fs.existsSync(uploadDir)) {
