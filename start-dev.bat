@@ -1,8 +1,8 @@
 @echo off
 chcp 65001 > nul
-title Floral Studio - Khởi Động Dev (Frontend & Backend)
+title KHflower Shop - Khởi Động Dev (Frontend & Backend)
 echo ========================================================
-echo   🌸 FLORAL STUDIO - QUẢN LÝ ĐƠN HOA & CHI PHÍ VỐN
+echo   🌸 KHFLOWER SHOP - QUẢN LÝ ĐƠN HOA & CHI PHÍ VỐN
 echo ========================================================
 echo   Backend API  : http://localhost:3001
 echo   Frontend Web : http://localhost:5173

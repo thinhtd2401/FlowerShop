@@ -19,7 +19,7 @@ export default function Sidebar({ currentView, onNavigate, totalOrdersCount, pen
           <Flower2 size={24} color="#ffffff" />
         </div>
         <div className="brand-info">
-          <h1>Floral Studio</h1>
+          <h1>KHflower Shop</h1>
           <p>Quản lý Đơn &amp; Vốn</p>
         </div>
       </div>

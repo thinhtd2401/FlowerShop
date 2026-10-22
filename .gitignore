@@ -6,6 +6,11 @@ node_modules/
 dist/
 client/dist/
 
+# Environment variables & secrets
+.env
+.env.*
+*.env
+
 # Logs & temp files
 *.log
 npm-debug.log*

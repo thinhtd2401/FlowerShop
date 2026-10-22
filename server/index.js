@@ -41,6 +41,6 @@ app.use('/api/{*path}', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🌸 FlowerShop API Server running at http://localhost:${PORT}`);
+  console.log(`🌸 KHflower Shop API Server running at http://localhost:${PORT}`);
   console.log(`📊 API Docs: http://localhost:${PORT}/api/health`);
 });

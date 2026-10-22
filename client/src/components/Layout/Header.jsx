@@ -45,7 +45,7 @@ export default function Header({
           <div className="logo">
             <Flower2 size={20} color="#ffffff" />
           </div>
-          <div className="title">Floral Studio</div>
+          <div className="title">KHflower Shop</div>
         </div>
         <div className="header-title-wrapper">
           <h2 id="pageTitle">{title}</h2>

@@ -1,8 +1,8 @@
 @echo off
 chcp 65001 > nul
-title Floral Studio - Full Stack & Cloudflare Tunnel
+title KHflower Shop - Full Stack & Cloudflare Tunnel
 echo ========================================================
-echo   🌸 FLORAL STUDIO - TOÀN BỘ DỊCH VỤ & CLOUDFLARE TUNNEL
+echo   🌸 KHFLOWER SHOP - TOÀN BỘ DỊCH VỤ & CLOUDFLARE TUNNEL
 echo ========================================================
 echo   1. Backend API   : http://localhost:3001
 echo   2. Frontend Web  : http://localhost:5173

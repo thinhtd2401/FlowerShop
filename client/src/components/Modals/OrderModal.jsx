@@ -426,7 +426,7 @@ export default function OrderModal({ isOpen, order, onClose, onSave, onDelete })
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e7e5e4', paddingBottom: 6, marginBottom: 8 }}>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--primary)', fontSize: 15, fontWeight: 700 }}>
-                <Flower2 size={16} /> Floral Studio — Tag Giao Hoa
+                <Flower2 size={16} /> KHflower Shop — Tag Giao Hoa
               </span>
               <span style={{ fontSize: 12, fontWeight: 700 }}>Mã: {order?.id}</span>
             </div>

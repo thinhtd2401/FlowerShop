@@ -1,4 +1,4 @@
-# 🌸 Floral Studio - Quản Lý Đơn Hoa & Chi Phí Vốn
+# 🌸 KHflower Shop - Quản Lý Đơn Hoa & Chi Phí Vốn
 
 Phần mềm quản lý tiệm hoa tối ưu cho dịp cao điểm lễ (đặc biệt ngày Phụ nữ Việt Nam 20/10), hỗ trợ thợ hoa kiểm soát đơn đặt trước, tiến độ cắm hoa theo khung giờ hẹn lấy, công nợ tiền cọc, tải ảnh mẫu hoa tham khảo và báo cáo doanh thu - lợi nhuận tự động.
 
@@ -51,7 +51,7 @@ Terminal sẽ tự động in ra URL trực tuyến dạng:
 👉 **`https://[subdomain].trycloudflare.com`** đồng thời lưu tự động vào file `public-url.txt`.
 
 ### 2. Cơ chế hoạt động của Reverse Proxy (Tại sao map vào cổng 5173?)
-Trong kiến trúc của Floral Studio:
+Trong kiến trúc của KHflower Shop:
 ```
 [ Khách hàng / Điện thoại ngoài Internet ]
                  │

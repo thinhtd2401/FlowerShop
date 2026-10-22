@@ -43,7 +43,7 @@ export function exportToExcel(orders = [], expenses = []) {
 
   // --- SHEET 1: Thống Kê Chung ---
   const statsRows = [
-    ['BÁO CÁO TỔNG QUAN KINH DOANH & TÀI CHÍNH - FLORAL STUDIO'],
+    ['BÁO CÁO TỔNG QUAN KINH DOANH & TÀI CHÍNH - KHFLOWER SHOP'],
     [`Thời gian xuất: ${displayTime}`],
     [],
     ['I. CHỈ SỐ TÀI CHÍNH & DÒNG TIỀN (VNĐ)', 'GIÁ TRỊ', 'GHI CHÚ'],
@@ -198,5 +198,5 @@ export function exportToExcel(orders = [], expenses = []) {
   XLSX.utils.book_append_sheet(wb, wsExpenses, 'Chi Phí Vật Tư & Vốn');
 
   // Write and trigger download
-  XLSX.writeFile(wb, `Bao_Cao_Floral_Studio_${dateStr}.xlsx`);
+  XLSX.writeFile(wb, `Bao_Cao_KHflower_Shop_${dateStr}.xlsx`);
 }
