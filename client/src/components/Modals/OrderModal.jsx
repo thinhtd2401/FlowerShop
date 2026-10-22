@@ -11,6 +11,7 @@ import { formatMoney } from '../../utils/format';
 import DatePicker from '../UI/DatePicker';
 import InAppCameraModal from '../UI/InAppCameraModal';
 import ConfirmDeleteModal from '../UI/ConfirmDeleteModal';
+import ConfirmDeliveryModal from '../UI/ConfirmDeliveryModal';
 import { uploadApi } from '../../api';
 import { compressImage, compressImages } from '../../utils/imageCompressor';
 import {
@@ -111,6 +112,7 @@ export default function OrderModal({ isOpen, order, onClose, onSave, onDelete })
   const [showInAppCamera, setShowInAppCamera] = useState(false);
   const [isDraftRestored, setIsDraftRestored] = useState(false);
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+  const [showDeliveryConfirm, setShowDeliveryConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const isEditing = !!order;
 
@@ -511,8 +513,8 @@ export default function OrderModal({ isOpen, order, onClose, onSave, onDelete })
                   value={form.status}
                   onChange={e => {
                     const nextStatus = e.target.value;
-                    if (nextStatus === 'completed') {
-                      setForm(prev => ({ ...prev, status: nextStatus, depositAmount: totalAmount }));
+                    if (nextStatus === 'completed' && form.status !== 'completed') {
+                      setShowDeliveryConfirm(true);
                     } else {
                       set('status', nextStatus);
                     }
@@ -1048,6 +1050,25 @@ export default function OrderModal({ isOpen, order, onClose, onSave, onDelete })
           message="Hành động này sẽ xóa vĩnh viễn đơn hàng này khỏi hệ thống. Bạn có chắc chắn muốn xóa không?"
           confirmText="Xóa Đơn Hàng"
           isDeleting={isDeleting}
+        />
+
+        {/* Modal Xác Nhận Đã Nhận Đủ Tiền Khi Chọn Đã Giao */}
+        <ConfirmDeliveryModal
+          isOpen={showDeliveryConfirm}
+          onClose={() => setShowDeliveryConfirm(false)}
+          onConfirm={() => {
+            setForm(prev => ({ ...prev, status: 'completed', depositAmount: totalAmount }));
+            setShowDeliveryConfirm(false);
+          }}
+          order={{
+            id: order?.id || 'Đơn hàng mới',
+            customerName: form.customerName || 'Khách hàng',
+            productName: form.productName || 'Mẫu hoa',
+            quantity,
+            totalAmount,
+            depositAmount: form.depositAmount,
+            remainingAmount
+          }}
         />
       </div>
     </div>

@@ -10,6 +10,7 @@ import {
   Search, X, Sparkles, CheckCircle2, AlertCircle, RotateCcw
 } from 'lucide-react';
 import DatePicker from '../components/UI/DatePicker';
+import ConfirmDeliveryModal from '../components/UI/ConfirmDeliveryModal';
 import { formatMoney, getStatusInfo, removeVietnameseTones } from '../utils/format';
 
 function getTodayDMY() {
@@ -243,11 +244,27 @@ export default function Timeline({ orders, onUpdateStatus, onOpenGallery }) {
     });
   }, [dateFilteredOrders, statusFilter, searchQuery]);
 
-  const handleStatusChange = async (id, newStatus) => {
-    if (window.confirm('Xác nhận đổi trạng thái đơn này?')) {
-      if (onUpdateStatus) {
-        await onUpdateStatus(id, newStatus);
-      }
+  const [pendingDeliveryOrder, setPendingDeliveryOrder] = useState(null);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+
+  const handleStatusChange = async (order, newStatus) => {
+    if (newStatus === 'completed') {
+      setPendingDeliveryOrder(order);
+      return;
+    }
+    if (onUpdateStatus) {
+      await onUpdateStatus(order.id, newStatus);
+    }
+  };
+
+  const handleConfirmDelivery = async () => {
+    if (!pendingDeliveryOrder || !onUpdateStatus) return;
+    try {
+      setIsUpdatingStatus(true);
+      await onUpdateStatus(pendingDeliveryOrder.id, 'completed');
+      setPendingDeliveryOrder(null);
+    } finally {
+      setIsUpdatingStatus(false);
     }
   };
 
@@ -688,7 +705,7 @@ export default function Timeline({ orders, onUpdateStatus, onOpenGallery }) {
                           <select
                             className={`status-badge ${statusClass}`}
                             value={o.status}
-                            onChange={e => handleStatusChange(o.id, e.target.value)}
+                            onChange={e => handleStatusChange(o, e.target.value)}
                             style={{
                               border: 'none',
                               cursor: 'pointer',
@@ -798,6 +815,15 @@ export default function Timeline({ orders, onUpdateStatus, onOpenGallery }) {
           );
         })}
       </div>
+
+      {/* Modal Xác Nhận Đã Nhận Đủ Tiền Khi Chọn Đã Giao */}
+      <ConfirmDeliveryModal
+        isOpen={!!pendingDeliveryOrder}
+        onClose={() => setPendingDeliveryOrder(null)}
+        onConfirm={handleConfirmDelivery}
+        order={pendingDeliveryOrder}
+        isUpdating={isUpdatingStatus}
+      />
     </section>
   );
 }

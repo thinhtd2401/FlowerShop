@@ -8,7 +8,9 @@ const path = require('path');
 const localNgrok = path.join(__dirname, 'ngrok.exe');
 const cmd = fs.existsSync(localNgrok) ? localNgrok : 'ngrok';
 
-const domain = 'wimp-crumb-language.ngrok-free.dev';
+//const domain = 'wimp-crumb-language.ngrok-free.dev';
+const domain = 'comprised-sturdily-factual.ngrok-free.dev';
+
 const port = 5173;
 
 console.log('🌸 [Ngrok Tunnel] Khởi tạo đường hầm kết nối...');

@@ -27,6 +27,7 @@ import {
 import { formatMoney, getStatusInfo, parseDateToComparable, formatToDDMMYYYY, formatOrderTime } from '../utils/format';
 import DatePicker from '../components/UI/DatePicker';
 import ConfirmDeleteModal from '../components/UI/ConfirmDeleteModal';
+import ConfirmDeliveryModal from '../components/UI/ConfirmDeliveryModal';
 
 const STATUS_LABELS = {
   all: 'Tất cả',
@@ -141,10 +142,27 @@ export default function Orders({ orders, searchQuery, onEditOrder, onUpdateStatu
 
   const [orderToDelete, setOrderToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [pendingDeliveryOrder, setPendingDeliveryOrder] = useState(null);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
-  const handleStatusChange = async (id, newStatus) => {
-    if (window.confirm('Xác nhận đổi trạng thái đơn này?')) {
-      await onUpdateStatus(id, newStatus);
+  const handleStatusChange = async (order, newStatus) => {
+    if (newStatus === 'completed') {
+      setPendingDeliveryOrder(order);
+      return;
+    }
+    if (onUpdateStatus) {
+      await onUpdateStatus(order.id, newStatus);
+    }
+  };
+
+  const handleConfirmDelivery = async () => {
+    if (!pendingDeliveryOrder || !onUpdateStatus) return;
+    try {
+      setIsUpdatingStatus(true);
+      await onUpdateStatus(pendingDeliveryOrder.id, 'completed');
+      setPendingDeliveryOrder(null);
+    } finally {
+      setIsUpdatingStatus(false);
     }
   };
 
@@ -492,7 +510,7 @@ export default function Orders({ orders, searchQuery, onEditOrder, onUpdateStatu
                     <select
                       className={`status-badge ${statusClass}`}
                       value={o.status}
-                      onChange={e => handleStatusChange(o.id, e.target.value)}
+                      onChange={e => handleStatusChange(o, e.target.value)}
                       style={{ border: 'none', cursor: 'pointer', appearance: 'auto', minWidth: 120 }}>
                       <option value="pending">Chờ cắm hoa</option>
                       <option value="ready">Đã bó xong</option>
@@ -552,7 +570,7 @@ export default function Orders({ orders, searchQuery, onEditOrder, onUpdateStatu
                 <select
                   className={`status-badge ${statusClass}`}
                   value={o.status}
-                  onChange={e => handleStatusChange(o.id, e.target.value)}
+                  onChange={e => handleStatusChange(o, e.target.value)}
                   style={{ border: 'none', cursor: 'pointer', fontSize: 11.5, padding: '3px 8px' }}>
                   <option value="pending">Chờ cắm hoa</option>
                   <option value="ready">Đã bó xong</option>
@@ -676,6 +694,15 @@ export default function Orders({ orders, searchQuery, onEditOrder, onUpdateStatu
         message="Hành động này sẽ xóa vĩnh viễn đơn hàng này khỏi hệ thống và không thể hoàn tác."
         confirmText="Xóa Đơn Hàng"
         isDeleting={isDeleting}
+      />
+
+      {/* Modal Xác Nhận Đã Nhận Đủ Tiền Khi Chọn Đã Giao */}
+      <ConfirmDeliveryModal
+        isOpen={!!pendingDeliveryOrder}
+        onClose={() => setPendingDeliveryOrder(null)}
+        onConfirm={handleConfirmDelivery}
+        order={pendingDeliveryOrder}
+        isUpdating={isUpdatingStatus}
       />
     </section>
   );
