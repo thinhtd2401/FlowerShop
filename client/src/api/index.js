@@ -80,7 +80,7 @@ export const expensesApi = {
 
 // Metrics API
 export const metricsApi = {
-  get: () => api.get('/metrics').then(r => r.data),
+  get: (params) => api.get('/metrics', { params }).then(r => r.data),
 };
 
 export default api;

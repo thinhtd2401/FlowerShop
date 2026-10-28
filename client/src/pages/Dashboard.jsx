@@ -1,13 +1,13 @@
 /**
  * pages/Dashboard.jsx - Tổng quan kinh doanh
+ * Hỗ trợ Date Range Filter với toggle Ngày đặt / Ngày giao
  */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   DollarSign,
   PackageOpen,
   TrendingUp,
   Clock,
-  Flame,
   ArrowRight,
   Flower2,
   Share2,
@@ -17,23 +17,67 @@ import {
   AlertCircle,
   Wallet,
   CheckCircle2,
-  Receipt
+  Receipt,
+  CalendarRange,
+  RotateCcw
 } from 'lucide-react';
 import { metricsApi } from '../api';
-import { formatMoney } from '../utils/format';
+import { formatMoney, formatToDDMMYYYY } from '../utils/format';
+import DatePicker from '../components/UI/DatePicker';
 
 export default function Dashboard({ onNavigate, refreshTrigger }) {
   const [metrics, setMetrics] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Date range filter state
+  const [dateFrom, setDateFrom] = useState('');         // dd/mm/yyyy
+  const [dateTo, setDateTo] = useState('');               // dd/mm/yyyy
+  const [dateField, setDateField] = useState('order_date'); // 'order_date' | 'delivery_date'
+  const [defaultDateFrom, setDefaultDateFrom] = useState('');
+  const [defaultDateTo, setDefaultDateTo] = useState('');
+  const [initialized, setInitialized] = useState(false);
+
+  const getTodayStr = useCallback(() => {
+    const t = new Date();
+    return `${String(t.getDate()).padStart(2, '0')}/${String(t.getMonth() + 1).padStart(2, '0')}/${t.getFullYear()}`;
+  }, []);
+
   useEffect(() => {
-    metricsApi.get().then(data => {
+    const params = {};
+    if (dateFrom) params.from = dateFrom;
+    if (dateTo) params.to = dateTo;
+    if (dateField) params.dateField = dateField;
+
+    setLoading(true);
+    metricsApi.get(params).then(data => {
       setMetrics(data);
+      // First load: set default range from minOrderDate -> today
+      if (!initialized && data.minOrderDate) {
+        const today = getTodayStr();
+        setDateFrom(data.minOrderDate);
+        setDateTo(today);
+        setDefaultDateFrom(data.minOrderDate);
+        setDefaultDateTo(today);
+        setInitialized(true);
+      }
       setLoading(false);
     }).catch(() => setLoading(false));
-  }, [refreshTrigger]);
+  }, [dateFrom, dateTo, dateField, refreshTrigger]);
 
-  if (loading) {
+  // Detect if user changed from defaults
+  const isFiltered = initialized && (
+    dateFrom !== defaultDateFrom ||
+    dateTo !== defaultDateTo ||
+    dateField !== 'order_date'
+  );
+
+  const handleResetFilter = () => {
+    setDateFrom(defaultDateFrom);
+    setDateTo(defaultDateTo);
+    setDateField('order_date');
+  };
+
+  if (loading && !metrics) {
     return (
       <div style={{ padding: 60, textAlign: 'center', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
         <Loader2 className="animate-spin" size={24} color="var(--primary)" />
@@ -62,8 +106,6 @@ export default function Dashboard({ onNavigate, refreshTrigger }) {
     profit = 6422000,
     expectedProfit = 11822000,
     statusCounts,
-    peakOct20Count,
-    peakOct20Value,
     topProducts,
     channelMap,
     recentOrders
@@ -87,30 +129,59 @@ export default function Dashboard({ onNavigate, refreshTrigger }) {
 
   return (
     <section className="view-section active" id="dashboardView">
-      {/* Peak Season Banner */}
-      <div className="peak-banner">
-        <div className="peak-content">
-          <div className="peak-badge">
-            <div>NGÀY LỄ</div>
-            <div style={{ fontSize: 16 }}>20/10</div>
+      {/* Date Range Filter */}
+      <div className="dashboard-date-filter">
+        <div className="dashboard-date-filter-left">
+          <div className="dashboard-date-filter-label">
+            <CalendarRange size={16} />
+            <span>Khoảng thời gian</span>
           </div>
-          <div className="peak-text">
-            <h4 style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Flame size={18} color="#f59e0b" />
-              <span>Chiến dịch cao điểm Ngày Phụ Nữ Việt Nam</span>
-            </h4>
-            <p>Đã ghi nhận <strong>{peakOct20Count} Đơn Hàng</strong> giao trong ngày 20/10 với tổng giá trị{' '}
-              <strong>{formatMoney(peakOct20Value)}</strong>. Hãy chuẩn bị sẵn hoa tươi và phụ liệu!</p>
+          <div className="dashboard-date-field-toggle">
+            <button
+              className={`toggle-btn ${dateField === 'order_date' ? 'active' : ''}`}
+              onClick={() => setDateField('order_date')}
+              type="button"
+            >
+              Ngày đặt
+            </button>
+            <button
+              className={`toggle-btn ${dateField === 'delivery_date' ? 'active' : ''}`}
+              onClick={() => setDateField('delivery_date')}
+              type="button"
+            >
+              Ngày giao
+            </button>
           </div>
         </div>
-        <button
-          className="peak-action-btn"
-          onClick={() => onNavigate('timeline')}
-          title="Xem lịch hẹn theo giờ"
-        >
-          <span>Xem lịch hẹn theo giờ</span>
-          <ArrowRight size={15} />
-        </button>
+        <div className="dashboard-date-filter-controls">
+          <DatePicker
+            value={dateFrom}
+            onChange={(dmy) => setDateFrom(dmy)}
+            placeholder="Từ ngày"
+            icon={true}
+            clearable={false}
+            className="dashboard-date-input"
+          />
+          <span className="dashboard-date-separator">→</span>
+          <DatePicker
+            value={dateTo}
+            onChange={(dmy) => setDateTo(dmy)}
+            placeholder="Đến ngày"
+            icon={true}
+            clearable={false}
+            className="dashboard-date-input"
+          />
+          {isFiltered && (
+            <button
+              className="btn btn-secondary btn-sm dashboard-date-reset"
+              onClick={handleResetFilter}
+              type="button"
+            >
+              <RotateCcw size={13} />
+              <span>Xem tất cả</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* NHÓM 1: THỐNG KÊ TÀI CHÍNH & DÒNG TIỀN */}
@@ -227,7 +298,7 @@ export default function Dashboard({ onNavigate, refreshTrigger }) {
             <div className="kpi-value" id="kpiOrdersTotal">
               {statusCounts.all} <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-muted)' }}>đơn</span>
             </div>
-            <div className="kpi-subtext"><span>Đơn hàng hiệu lực mùa lễ</span></div>
+            <div className="kpi-subtext"><span>Đơn hàng hiệu lực</span></div>
           </div>
 
           <div className="kpi-card orders-completed">
@@ -254,19 +325,6 @@ export default function Dashboard({ onNavigate, refreshTrigger }) {
               {statusCounts.pending + (statusCounts.ready || 0)} <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-muted)' }}>đơn</span>
             </div>
             <div className="kpi-subtext"><span>Đã cọc {formatMoney(pendingDeposit)}, còn {formatMoney(pendingCollection)}</span></div>
-          </div>
-
-          <div className="kpi-card orders-peak">
-            <div className="kpi-header">
-              <span className="kpi-title">Cao Điểm 20/10</span>
-              <div className="kpi-icon-wrap">
-                <Flame size={18} color="#dc2626" />
-              </div>
-            </div>
-            <div className="kpi-value" id="kpiOrdersPeak">
-              {peakOct20Count} <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-muted)' }}>đơn</span>
-            </div>
-            <div className="kpi-subtext"><span>Giá trị {formatMoney(peakOct20Value)}</span></div>
           </div>
 
           <div className="kpi-card expenses-count">

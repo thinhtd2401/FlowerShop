@@ -1,5 +1,6 @@
 /**
  * routes/metrics.js - Dashboard KPI calculations
+ * Supports date range filtering via query params: from, to (dd/mm/yyyy), dateField (order_date|delivery_date)
  */
 const express = require('express');
 const router = express.Router();
@@ -11,11 +12,69 @@ const { requireRole } = require('../middleware/rbac');
 router.use(authenticateToken);
 router.use(requireRole(['admin', 'manager']));
 
-// GET /api/metrics - Tính toán KPI dashboard
+/**
+ * Parse dd/mm/yyyy string to Date object
+ * @param {string} str - Date string in dd/mm/yyyy format
+ * @returns {Date|null}
+ */
+const parseDMY = (str) => {
+  if (!str) return null;
+  const parts = str.split('/');
+  if (parts.length !== 3) return null;
+  const [d, m, y] = parts.map(Number);
+  if (isNaN(d) || isNaN(m) || isNaN(y)) return null;
+  return new Date(y, m - 1, d);
+};
+
+/**
+ * Format Date object to dd/mm/yyyy string
+ * @param {Date} date
+ * @returns {string}
+ */
+const formatDMY = (date) => {
+  if (!date) return null;
+  return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
+};
+
+// GET /api/metrics?from=11/10/2026&to=28/10/2026&dateField=order_date
 router.get('/', (req, res) => {
   try {
-    const orders = db.prepare('SELECT * FROM orders').all();
-    const expenses = db.prepare('SELECT * FROM expenses').all();
+    const { from, to, dateField } = req.query;
+
+    const fromDate = parseDMY(from);
+    const toDate = parseDMY(to);
+    // Validate dateField: only allow 'order_date' or 'delivery_date'
+    const filterField = dateField === 'delivery_date' ? 'delivery_date' : 'order_date';
+
+    let orders = db.prepare('SELECT * FROM orders').all();
+    let expenses = db.prepare('SELECT * FROM expenses').all();
+
+    // Filter orders & expenses by date range
+    if (fromDate || toDate) {
+      orders = orders.filter(o => {
+        const d = parseDMY(o[filterField]);
+        if (!d) return true; // Giữ lại nếu không có ngày
+        if (fromDate && d < fromDate) return false;
+        if (toDate && d > toDate) return false;
+        return true;
+      });
+      // Expenses always filter by expense date (expenses.date)
+      expenses = expenses.filter(e => {
+        const d = parseDMY(e.date);
+        if (!d) return true;
+        if (fromDate && d < fromDate) return false;
+        if (toDate && d > toDate) return false;
+        return true;
+      });
+    }
+
+    // Calculate minOrderDate from ALL orders (unfiltered) for default range
+    const allOrders = db.prepare("SELECT order_date FROM orders WHERE status != 'cancelled'").all();
+    let minOrderDate = null;
+    for (const o of allOrders) {
+      const d = parseDMY(o.order_date);
+      if (d && (!minOrderDate || d < minOrderDate)) minOrderDate = d;
+    }
 
     const activeOrders = orders.filter(o => o.status !== 'cancelled');
 
@@ -54,11 +113,6 @@ router.get('/', (req, res) => {
       completed: activeOrders.filter(o => o.status === 'completed').length,
       cancelled: orders.filter(o => o.status === 'cancelled').length
     };
-
-    // Peak 20/10
-    const peakOct20Orders = activeOrders.filter(o => (o.delivery_date || '').includes('20/10'));
-    const peakOct20Count = peakOct20Orders.length;
-    const peakOct20Value = peakOct20Orders.reduce((sum, o) => sum + o.total_amount, 0);
 
     // Top products
     const productMap = {};
@@ -103,8 +157,7 @@ router.get('/', (req, res) => {
       profit,
       expectedProfit,
       statusCounts,
-      peakOct20Count,
-      peakOct20Value,
+      minOrderDate: formatDMY(minOrderDate),
       topProducts,
       channelMap,
       recentOrders

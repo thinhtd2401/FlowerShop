@@ -654,68 +654,92 @@ button {
   font-weight: 500;
 }
 
-/* Quick Banner for Oct 20th Peak Season */
-.peak-banner {
-  background: linear-gradient(135deg, #fdf4f2 0%, #fffbf5 100%);
-  border: 1px solid #f8dcd7;
-  border-radius: var(--radius-lg);
-  padding: 16px 22px;
-  margin-bottom: 24px;
+/* ====== Dashboard Date Range Filter ====== */
+.dashboard-date-filter {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  box-shadow: 0 2px 8px rgba(216, 138, 138, 0.12);
+  gap: 16px;
+  padding: 14px 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
-.peak-content {
+.dashboard-date-filter-left {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
+  flex-wrap: wrap;
 }
 
-.peak-badge {
-  background-color: var(--secondary);
-  color: #fff;
-  padding: 8px 14px;
-  border-radius: var(--radius-md);
-  font-weight: 700;
-  font-size: 13px;
-  text-align: center;
-  line-height: 1.2;
-}
-
-.peak-text h4 {
-  font-size: 15px;
-  font-weight: 700;
-  color: #9f3e3e;
-  margin-bottom: 2px;
-}
-
-.peak-text p {
-  font-size: 13px;
-  color: #784545;
-}
-
-.peak-action-btn {
-  display: inline-flex;
+.dashboard-date-filter-label {
+  display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-main);
+  white-space: nowrap;
+}
+
+/* Toggle: Ngày đặt / Ngày giao */
+.dashboard-date-field-toggle {
+  display: inline-flex;
+  border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-  font-size: 13px;
+  overflow: hidden;
+  background: var(--bg-muted);
+}
+
+.dashboard-date-field-toggle .toggle-btn {
+  padding: 5px 14px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  background: #ffffff;
-  color: #b45309;
-  border: 1px solid #f59e0b;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
   transition: all 0.2s ease;
   white-space: nowrap;
 }
 
-.peak-action-btn:hover {
-  background: #fffbeb;
-  border-color: #d97706;
-  transform: translateY(-1px);
+.dashboard-date-field-toggle .toggle-btn.active {
+  background: var(--primary);
+  color: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.dashboard-date-field-toggle .toggle-btn:not(.active):hover {
+  color: var(--text-main);
+  background: var(--bg-app);
+}
+
+.dashboard-date-filter-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.dashboard-date-separator {
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.dashboard-date-input {
+  min-width: 130px;
+}
+
+.dashboard-date-reset {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
 }
 
 /* Order Management Table */
@@ -2537,27 +2561,34 @@ button {
     padding: 16px 14px;
   }
 
-  /* Peak 20/10 Banner on Mobile */
-  .peak-banner {
+  /* Dashboard Date Range Filter on Mobile */
+  .dashboard-date-filter {
     flex-direction: column;
     align-items: stretch;
-    gap: 14px;
-    padding: 16px;
+    gap: 12px;
+    padding: 12px 14px;
   }
 
-  .peak-content {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
+  .dashboard-date-filter-left {
+    justify-content: space-between;
   }
 
-  .peak-badge {
-    align-self: flex-start;
+  .dashboard-date-filter-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
   }
 
-  .peak-banner .btn,
-  .peak-banner .peak-action-btn {
-    width: 100%;
+  .dashboard-date-separator {
+    display: none;
+  }
+
+  .dashboard-date-input {
+    min-width: 0;
+  }
+
+  .dashboard-date-reset {
+    grid-column: 1 / -1;
     justify-content: center;
   }
 
@@ -3498,17 +3529,13 @@ button {
   border-top: 1px solid var(--border-color);
 }
 
-[data-theme="dark"] .peak-banner {
-  background: linear-gradient(135deg, #2a1b1b, #201712);
-  border-color: #5c3535;
+[data-theme="dark"] .dashboard-date-field-toggle {
+  background: var(--bg-app);
+  border-color: var(--border-color);
 }
 
-[data-theme="dark"] .peak-text h4 {
-  color: #f87171;
-}
-
-[data-theme="dark"] .peak-text p {
-  color: #fca5a5;
+[data-theme="dark"] .dashboard-date-field-toggle .toggle-btn:not(.active):hover {
+  background: var(--bg-card);
 }
 
 [data-theme="dark"] .custom-datepicker-wrap {
@@ -3554,16 +3581,7 @@ button {
   color: var(--text-main);
 }
 
-[data-theme="dark"] .peak-action-btn {
-  background: #362222;
-  color: #fde047;
-  border-color: #eab308;
-}
 
-[data-theme="dark"] .peak-action-btn:hover {
-  background: #4a2c2c;
-  border-color: #facc15;
-}
 
 [data-theme="dark"] .kpi-group-badge.finance {
   background-color: rgba(5, 150, 105, 0.18);
