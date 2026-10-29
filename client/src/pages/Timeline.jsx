@@ -545,12 +545,12 @@ export default function Timeline({ orders, onUpdateStatus, onOpenGallery }) {
               {searchQuery
                 ? `Không tìm thấy đơn hàng nào khớp với từ khóa "${searchQuery}"`
                 : statusFilter !== 'all'
-                  ? `Không có đơn hàng nào ở trạng thái "${getStatusInfo(statusFilter).label}" trong khoảng ngày đã chọn`
-                  : filterMode === 'default'
-                    ? `Không có đơn hoa nào hẹn lấy trong Hôm nay (${todayStr}) và Ngày mai (${tomorrowStr})`
-                    : filterMode === 'custom'
-                      ? `Không có đơn hoa nào hẹn giao ${startDate && endDate ? `từ ngày ${startDate} đến ngày ${endDate}` : startDate ? `từ ngày ${startDate}` : endDate ? `đến ngày ${endDate}` : 'trong khoảng ngày đã chọn'}`
-                      : 'Không có đơn hàng nào phù hợp với bộ lọc'}
+                ? `Không có đơn hàng nào ở trạng thái "${getStatusInfo(statusFilter).label}" trong khoảng ngày đã chọn`
+                : filterMode === 'default'
+                ? `Không có đơn hoa nào hẹn lấy trong Hôm nay (${todayStr}) và Ngày mai (${tomorrowStr})`
+                : filterMode === 'custom'
+                ? `Không có đơn hoa nào hẹn giao ${startDate && endDate ? `từ ngày ${startDate} đến ngày ${endDate}` : startDate ? `từ ngày ${startDate}` : endDate ? `đến ngày ${endDate}` : 'trong khoảng ngày đã chọn'}`
+                : 'Không có đơn hàng nào phù hợp với bộ lọc'}
             </h4>
             <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>
               {searchQuery || statusFilter !== 'all'
