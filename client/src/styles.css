@@ -2128,6 +2128,15 @@ button {
   box-shadow: var(--shadow-sm);
 }
 
+.timeline-filter-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  flex-wrap: wrap;
+}
+
 .timeline-filter-pills {
   display: flex;
   align-items: center;
@@ -2793,6 +2802,18 @@ button {
   }
 
   /* Timeline View on Mobile */
+  .timeline-filter-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .timeline-filter-pills {
+    width: 100%;
+    max-width: 100%;
+    padding-bottom: 4px;
+  }
+
   .timeline-cards-grid {
     grid-template-columns: 1fr;
     gap: 12px;

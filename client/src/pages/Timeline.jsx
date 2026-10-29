@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import DatePicker from '../components/UI/DatePicker';
 import ConfirmDeliveryModal from '../components/UI/ConfirmDeliveryModal';
-import { formatMoney, getStatusInfo, removeVietnameseTones } from '../utils/format';
+import { formatMoney, getStatusInfo, removeVietnameseTones, parseDateToComparable } from '../utils/format';
 
 function getTodayDMY() {
   const d = new Date();
@@ -40,7 +40,8 @@ export default function Timeline({ orders, onUpdateStatus, onOpenGallery }) {
 
   // Filter modes: 'default' (Hôm nay + Ngày mai) | 'today' | 'tomorrow' | 'oct20' | 'all' | 'custom'
   const [filterMode, setFilterMode] = useState('default');
-  const [customDate, setCustomDate] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
   // Status Filter: 'all' | 'pending' | 'ready' | 'completed' | 'cancelled'
   const [statusFilter, setStatusFilter] = useState('all');
@@ -118,14 +119,21 @@ export default function Timeline({ orders, onUpdateStatus, onOpenGallery }) {
         return d?.includes('20/10');
       }
       if (filterMode === 'custom') {
-        return customDate ? d === customDate : true;
+        if (!startDate && !endDate) return true;
+        const orderDateIso = parseDateToComparable(d);
+        if (!orderDateIso) return false;
+        const startIso = parseDateToComparable(startDate);
+        const endIso = parseDateToComparable(endDate);
+        if (startIso && orderDateIso < startIso) return false;
+        if (endIso && orderDateIso > endIso) return false;
+        return true;
       }
       if (filterMode === 'all') {
         return true;
       }
       return true;
     });
-  }, [orders, filterMode, customDate, todayStr, tomorrowStr]);
+  }, [orders, filterMode, startDate, endDate, todayStr, tomorrowStr]);
 
   // 3. Tính toán Macro Summary và Status Counts cho khoảng ngày đang xem
   const macroSummary = useMemo(() => {
@@ -272,7 +280,8 @@ export default function Timeline({ orders, onUpdateStatus, onOpenGallery }) {
     setStatusFilter('all');
     setSearchQuery('');
     setFilterMode('default');
-    setCustomDate('');
+    setStartDate('');
+    setEndDate('');
   };
 
   return (
@@ -285,15 +294,16 @@ export default function Timeline({ orders, onUpdateStatus, onOpenGallery }) {
 
       {/* Date Filter & Control Toolbar */}
       <div className="timeline-filter-bar">
-        {/* Row 1: Date Filter Pills & Custom Date Picker */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, width: '100%', flexWrap: 'wrap' }}>
+        {/* Row 1: Date Filter Pills & Date Range Picker */}
+        <div className="timeline-filter-row">
           <div className="timeline-filter-pills">
             <button
               type="button"
               className={`timeline-pill ${filterMode === 'default' ? 'active' : ''}`}
               onClick={() => {
                 setFilterMode('default');
-                setCustomDate('');
+                setStartDate('');
+                setEndDate('');
               }}
               title="Mặc định: Chỉ xem lịch cắm hoa Hôm nay và Ngày mai"
             >
@@ -307,7 +317,8 @@ export default function Timeline({ orders, onUpdateStatus, onOpenGallery }) {
               className={`timeline-pill ${filterMode === 'today' ? 'active' : ''}`}
               onClick={() => {
                 setFilterMode('today');
-                setCustomDate('');
+                setStartDate('');
+                setEndDate('');
               }}
             >
               <span>Hôm nay ({todayStr.slice(0, 5)})</span>
@@ -319,7 +330,8 @@ export default function Timeline({ orders, onUpdateStatus, onOpenGallery }) {
               className={`timeline-pill ${filterMode === 'tomorrow' ? 'active' : ''}`}
               onClick={() => {
                 setFilterMode('tomorrow');
-                setCustomDate('');
+                setStartDate('');
+                setEndDate('');
               }}
             >
               <span>Ngày mai ({tomorrowStr.slice(0, 5)})</span>
@@ -331,7 +343,8 @@ export default function Timeline({ orders, onUpdateStatus, onOpenGallery }) {
               className={`timeline-pill ${filterMode === 'oct20' ? 'active' : ''}`}
               onClick={() => {
                 setFilterMode('oct20');
-                setCustomDate('');
+                setStartDate('');
+                setEndDate('');
               }}
               style={{ color: filterMode === 'oct20' ? '#ffffff' : '#b45309' }}
             >
@@ -345,7 +358,8 @@ export default function Timeline({ orders, onUpdateStatus, onOpenGallery }) {
               className={`timeline-pill ${filterMode === 'all' ? 'active' : ''}`}
               onClick={() => {
                 setFilterMode('all');
-                setCustomDate('');
+                setStartDate('');
+                setEndDate('');
               }}
             >
               <span>Tất cả ngày</span>
@@ -353,21 +367,44 @@ export default function Timeline({ orders, onUpdateStatus, onOpenGallery }) {
             </button>
           </div>
 
-          {/* DatePicker to pick any specific date */}
-          <div className="timeline-date-control">
+          {/* Date Range Picker */}
+          <div className="date-range-picker" title="Lọc tiến độ theo khoảng ngày giao hoa">
             <DatePicker
-              value={customDate}
+              label="Từ:"
+              value={startDate}
               onChange={(dmy) => {
-                setCustomDate(dmy);
-                setFilterMode(dmy ? 'custom' : 'default');
+                setStartDate(dmy);
+                setFilterMode(dmy || endDate ? 'custom' : 'default');
               }}
-              onClear={() => {
-                setCustomDate('');
-                setFilterMode('default');
-              }}
-              placeholder="Xem ngày khác..."
-              style={{ minWidth: 155 }}
+              clearable={false}
+              placeholder="dd/mm/yyyy"
             />
+            <span className="date-range-sep">—</span>
+            <DatePicker
+              label="Đến:"
+              icon={false}
+              value={endDate}
+              onChange={(dmy) => {
+                setEndDate(dmy);
+                setFilterMode(startDate || dmy ? 'custom' : 'default');
+              }}
+              clearable={false}
+              placeholder="dd/mm/yyyy"
+            />
+            {(startDate || endDate) && (
+              <button
+                type="button"
+                className="btn-clear-date"
+                onClick={() => {
+                  setStartDate('');
+                  setEndDate('');
+                  setFilterMode('default');
+                }}
+                title="Xóa lọc khoảng ngày"
+              >
+                <X size={12} />
+              </button>
+            )}
           </div>
         </div>
 
@@ -508,12 +545,12 @@ export default function Timeline({ orders, onUpdateStatus, onOpenGallery }) {
               {searchQuery
                 ? `Không tìm thấy đơn hàng nào khớp với từ khóa "${searchQuery}"`
                 : statusFilter !== 'all'
-                ? `Không có đơn hàng nào ở trạng thái "${getStatusInfo(statusFilter).label}" trong khoảng ngày đã chọn`
-                : filterMode === 'default'
-                ? `Không có đơn hoa nào hẹn lấy trong Hôm nay (${todayStr}) và Ngày mai (${tomorrowStr})`
-                : filterMode === 'custom'
-                ? `Không có đơn hoa nào hẹn giao vào ngày ${customDate}`
-                : 'Không có đơn hàng nào phù hợp với bộ lọc'}
+                  ? `Không có đơn hàng nào ở trạng thái "${getStatusInfo(statusFilter).label}" trong khoảng ngày đã chọn`
+                  : filterMode === 'default'
+                    ? `Không có đơn hoa nào hẹn lấy trong Hôm nay (${todayStr}) và Ngày mai (${tomorrowStr})`
+                    : filterMode === 'custom'
+                      ? `Không có đơn hoa nào hẹn giao ${startDate && endDate ? `từ ngày ${startDate} đến ngày ${endDate}` : startDate ? `từ ngày ${startDate}` : endDate ? `đến ngày ${endDate}` : 'trong khoảng ngày đã chọn'}`
+                      : 'Không có đơn hàng nào phù hợp với bộ lọc'}
             </h4>
             <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>
               {searchQuery || statusFilter !== 'all'
@@ -536,7 +573,8 @@ export default function Timeline({ orders, onUpdateStatus, onOpenGallery }) {
                 className="btn btn-primary btn-sm"
                 onClick={() => {
                   setFilterMode('all');
-                  setCustomDate('');
+                  setStartDate('');
+                  setEndDate('');
                   setStatusFilter('all');
                   setSearchQuery('');
                 }}
@@ -548,7 +586,8 @@ export default function Timeline({ orders, onUpdateStatus, onOpenGallery }) {
                 className="btn btn-secondary btn-sm"
                 onClick={() => {
                   setFilterMode('oct20');
-                  setCustomDate('');
+                  setStartDate('');
+                  setEndDate('');
                   setStatusFilter('all');
                   setSearchQuery('');
                 }}
