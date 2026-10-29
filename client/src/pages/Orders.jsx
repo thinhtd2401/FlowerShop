@@ -86,7 +86,8 @@ export default function Orders({ orders, searchQuery, onEditOrder, onUpdateStatu
           (o.customerName || '').toLowerCase().includes(q) ||
           (o.phone || '').includes(q) ||
           (o.productName || '').toLowerCase().includes(q) ||
-          (o.id || '').toLowerCase().includes(q)
+          (o.id || '').toLowerCase().includes(q) ||
+          (o.channel || '').toLowerCase().includes(q)
         );
       }
       return true;

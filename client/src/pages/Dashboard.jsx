@@ -117,7 +117,13 @@ export default function Dashboard({ onNavigate, refreshTrigger }) {
 
   const totalChannels = Object.values(channelMap).reduce((a, b) => a + b, 0);
   const CHANNEL_COLORS = {
-    Instagram: '#e1306c', Zalo: '#0068ff', 'Điện thoại': '#10b981', 'Tại tiệm': '#8b5cf6'
+    Thread: '#18181b',
+    Threads: '#18181b',
+    Facebook: '#1877f2',
+    Instagram: '#e1306c',
+    Zalo: '#0068ff',
+    'Điện thoại': '#10b981',
+    'Tại tiệm': '#8b5cf6'
   };
 
   const STATUS_LABELS = {

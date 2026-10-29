@@ -119,7 +119,7 @@ router.post('/', requireOrderManagePermission, (req, res) => {
       newId,
       data.orderDate || today,
       (data.customerName || 'Khách vãng lai').trim(),
-      data.channel || 'Instagram',
+      data.channel || 'Thread',
       (data.phone || '').trim(),
       (data.productName || 'Bó hoa tươi').trim(),
       quantity,

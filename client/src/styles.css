@@ -1225,6 +1225,8 @@ button {
   display: inline-block;
 }
 
+.badge-channel.thread { background-color: #f3f4f6; color: #18181b; }
+.badge-channel.fb { background-color: #e7f3ff; color: #1877f2; }
 .badge-channel.ig { background-color: #fce7f3; color: #db2777; }
 .badge-channel.zl { background-color: #e0f2fe; color: #0284c7; }
 .badge-channel.phone { background-color: #f3f4f6; color: #4b5563; }

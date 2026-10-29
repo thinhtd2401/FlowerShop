@@ -25,7 +25,7 @@ db.exec(`
     id TEXT PRIMARY KEY,
     order_date TEXT,
     customer_name TEXT NOT NULL DEFAULT 'Khách vãng lai',
-    channel TEXT DEFAULT 'Instagram',
+    channel TEXT DEFAULT 'Thread',
     phone TEXT DEFAULT '',
     product_name TEXT DEFAULT 'Bó hoa tươi',
     quantity INTEGER DEFAULT 1,

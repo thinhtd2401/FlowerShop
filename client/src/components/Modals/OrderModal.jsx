@@ -86,7 +86,7 @@ function getTodayFormatted() {
 const DEFAULT_FORM = {
   customerName: '',
   phone: '',
-  channel: 'Instagram',
+  channel: 'Thread',
   status: 'pending',
   productName: '',
   quantity: 1,
@@ -134,7 +134,8 @@ export default function OrderModal({ isOpen, order, onClose, onSave, onDelete })
 
   useEffect(() => {
     if (order) {
-      setForm({ ...DEFAULT_FORM, ...order, images: order.images || [] });
+      const resolvedChannel = order.channel === 'Threads' ? 'Thread' : (order.channel || 'Thread');
+      setForm({ ...DEFAULT_FORM, ...order, channel: resolvedChannel, images: order.images || [] });
       setIsDraftRestored(false);
     } else if (isOpen) {
       const savedDraft = getOrderDraft();
@@ -500,6 +501,8 @@ export default function OrderModal({ isOpen, order, onClose, onSave, onDelete })
               <div className="form-group">
                 <label>Kênh Tiếp Nhận</label>
                 <select id="orderChannel" value={form.channel} onChange={e => set('channel', e.target.value)}>
+                  <option value="Thread">Thread</option>
+                  <option value="Facebook">Facebook</option>
                   <option value="Instagram">Instagram (Direct)</option>
                   <option value="Zalo">Zalo</option>
                   <option value="Điện thoại">Điện thoại / Hotline</option>
