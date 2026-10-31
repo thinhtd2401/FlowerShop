@@ -19,7 +19,8 @@ import {
   Wallet,
   Loader2,
   Lock,
-  Mail
+  Mail,
+  DollarSign
 } from 'lucide-react';
 import { usersApi } from '../api';
 import { useAuth } from '../hooks/useAuth';
@@ -239,6 +240,11 @@ export default function UserManagement({ showToast }) {
                               <Mail size={12} />
                               {u.email}
                             </span>
+                            {u.isSalaryEligible && (
+                              <span style={{ fontSize: 10.5, background: 'var(--status-completed-bg)', color: 'var(--status-completed-text)', border: '1px solid var(--status-completed-border)', padding: '1px 6px', borderRadius: 8, display: 'inline-flex', alignItems: 'center', gap: 3, marginTop: 4, width: 'fit-content' }}>
+                                <DollarSign size={10} /> Tính lương
+                              </span>
+                            )}
                           </div>
                         </div>
                       </td>
@@ -362,6 +368,11 @@ export default function UserManagement({ showToast }) {
                         {isSelf && <span className="self-tag">Bạn</span>}
                       </div>
                       <span className="card-email">{u.email}</span>
+                      {u.isSalaryEligible && (
+                        <span style={{ fontSize: 10.5, background: 'var(--status-completed-bg)', color: 'var(--status-completed-text)', border: '1px solid var(--status-completed-border)', padding: '1px 6px', borderRadius: 8, display: 'inline-flex', alignItems: 'center', gap: 3, marginTop: 3, width: 'fit-content' }}>
+                          <DollarSign size={10} /> Tính lương
+                        </span>
+                      )}
                     </div>
                     <span className={`role-badge ${u.role}`}>
                       {u.role === 'admin' ? 'Admin' : u.role === 'manager' ? 'Quản trị' : 'Nhân viên'}

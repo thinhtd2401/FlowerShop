@@ -26,6 +26,7 @@ function formatUser(row) {
     role: row.role || 'staff',
     permissions,
     status: row.status || 'active',
+    isSalaryEligible: Boolean(row.is_salary_eligible),
     createdAt: row.created_at,
     lastLoginAt: row.last_login_at
   };

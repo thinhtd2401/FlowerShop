@@ -32,6 +32,7 @@ app.use('/api/orders', require('./src/routes/orders'));
 app.use('/api/expenses', require('./src/routes/expenses'));
 app.use('/api/metrics', require('./src/routes/metrics'));
 app.use('/api/upload', require('./src/routes/upload'));
+app.use('/api/salary', require('./src/routes/salary'));
 
 // Health check
 app.get('/api/health', (req, res) => {

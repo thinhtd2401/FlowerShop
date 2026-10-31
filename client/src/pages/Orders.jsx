@@ -22,7 +22,8 @@ import {
   CheckCircle2,
   RotateCcw,
   X,
-  Package
+  Package,
+  UserCheck
 } from 'lucide-react';
 import { formatMoney, getStatusInfo, parseDateToComparable, formatToDDMMYYYY, formatOrderTime } from '../utils/format';
 import DatePicker from '../components/UI/DatePicker';
@@ -434,7 +435,15 @@ export default function Orders({ orders, searchQuery, onEditOrder, onUpdateStatu
                   <td>
                     <strong>{o.customerName}</strong>
                     {o.phone && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{o.phone}</div>}
-                    <span style={{ fontSize: 11, background: 'var(--bg-muted)', padding: '1px 6px', borderRadius: 10, marginTop: 2, display: 'inline-block' }}>{o.channel}</span>
+                    <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 3 }}>
+                      <span style={{ fontSize: 11, background: 'var(--bg-muted)', padding: '1px 6px', borderRadius: 10 }}>{o.channel}</span>
+                      {o.assignedUserName && (
+                        <span style={{ fontSize: 11, background: 'var(--primary-subtle)', color: 'var(--primary)', padding: '1px 6px', borderRadius: 10, display: 'inline-flex', alignItems: 'center', gap: 3 }} title="Người tiếp nhận & xử lý đơn">
+                          <UserCheck size={10} />
+                          <span>{o.assignedUserName}</span>
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td>
                     <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
@@ -589,6 +598,12 @@ export default function Orders({ orders, searchQuery, onEditOrder, onUpdateStatu
                       <Phone size={12} />
                       <span>{o.phone}</span>
                     </a>
+                  )}
+                  {o.assignedUserName && (
+                    <div style={{ fontSize: 11, color: 'var(--primary)', display: 'inline-flex', alignItems: 'center', gap: 3, marginTop: 3 }}>
+                      <UserCheck size={11} />
+                      <span>Xử lý: <strong>{o.assignedUserName}</strong></span>
+                    </div>
                   )}
                 </div>
                 <span style={{ fontSize: 11, background: 'var(--bg-muted)', padding: '2px 8px', borderRadius: 12, color: 'var(--text-muted)', fontWeight: 600 }}>

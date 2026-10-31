@@ -1,6 +1,6 @@
 /**
  * routes/users.js - User Management & Screen Permission Assignment
- * Accessible only by Admin & Manager (Quản trị)
+ * Accessible only by Admin & Manager (Quản trị), except /assignees which is for all authenticated users
  */
 const express = require('express');
 const router = express.Router();
@@ -9,11 +9,23 @@ const db = require('../db/database');
 const { formatUser, authenticateToken } = require('../middleware/auth');
 const { requireRole } = require('../middleware/rbac');
 
-// All routes here require at least 'manager' or 'admin'
+// All routes require authentication
 router.use(authenticateToken);
+
+// GET /api/users/assignees - Danh sách người dùng rút gọn để phân công nhận đơn (mọi nhân viên đều có thể gọi)
+router.get('/assignees', (req, res) => {
+  try {
+    const rows = db.prepare("SELECT id, name, email, avatar, role FROM users WHERE status = 'active' ORDER BY name ASC").all();
+    return res.json(rows);
+  } catch (err) {
+    return res.status(500).json({ error: 'Lỗi tải danh sách người tiếp nhận: ' + err.message });
+  }
+});
+
+// All following routes require at least 'manager' or 'admin'
 router.use(requireRole(['admin', 'manager']));
 
-// GET /api/users - Danh sách người dùng
+// GET /api/users - Danh sách người dùng đầy đủ cho quản trị
 router.get('/', (req, res) => {
   try {
     const rows = db.prepare('SELECT * FROM users ORDER BY created_at ASC').all();
@@ -26,7 +38,7 @@ router.get('/', (req, res) => {
 // POST /api/users - Tạo người dùng mới từ trang quản trị
 router.post('/', (req, res) => {
   try {
-    const { email, name, password, role = 'staff', permissions = ['orders', 'timeline'], status = 'active' } = req.body;
+    const { email, name, password, role = 'staff', permissions = ['orders', 'timeline'], status = 'active', isSalaryEligible = 0 } = req.body;
 
     if (!email || !name) {
       return res.status(400).json({ error: 'Email và Tên người dùng là bắt buộc' });
@@ -51,10 +63,11 @@ router.post('/', (req, res) => {
     const newId = `user_${Date.now()}`;
     const passwordHash = password ? bcrypt.hashSync(password, 10) : bcrypt.hashSync('123456', 10);
     const validPerms = Array.isArray(permissions) ? permissions : ['orders', 'timeline'];
+    const eligibleInt = isSalaryEligible ? 1 : 0;
 
     db.prepare(`
-      INSERT INTO users (id, email, name, password_hash, role, permissions, status, auth_provider)
-      VALUES (?, ?, ?, ?, ?, ?, ?, 'email')
+      INSERT INTO users (id, email, name, password_hash, role, permissions, status, is_salary_eligible, auth_provider)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'email')
     `).run(
       newId,
       normalizedEmail,
@@ -62,7 +75,8 @@ router.post('/', (req, res) => {
       passwordHash,
       role,
       JSON.stringify(validPerms),
-      status
+      status,
+      eligibleInt
     );
 
     const created = db.prepare('SELECT * FROM users WHERE id = ?').get(newId);
@@ -76,7 +90,7 @@ router.post('/', (req, res) => {
 router.put('/:id', (req, res) => {
   try {
     const targetId = req.params.id;
-    const { name, role, permissions, status, newPassword } = req.body;
+    const { name, role, permissions, status, newPassword, isSalaryEligible } = req.body;
 
     const targetUser = db.prepare('SELECT * FROM users WHERE id = ?').get(targetId);
     if (!targetUser) {
@@ -102,6 +116,7 @@ router.put('/:id', (req, res) => {
     let updatedName = name ? name.trim() : targetUser.name;
     let updatedRole = role && ['admin', 'manager', 'staff'].includes(role) ? role : targetUser.role;
     let updatedStatus = status && ['active', 'blocked'].includes(status) ? status : targetUser.status;
+    let updatedEligible = isSalaryEligible !== undefined ? (isSalaryEligible ? 1 : 0) : targetUser.is_salary_eligible;
 
     let updatedPermissions = targetUser.permissions;
     if (Array.isArray(permissions)) {
@@ -117,15 +132,15 @@ router.put('/:id', (req, res) => {
       const hash = bcrypt.hashSync(newPassword.trim(), 10);
       db.prepare(`
         UPDATE users
-        SET name = ?, role = ?, permissions = ?, status = ?, password_hash = ?
+        SET name = ?, role = ?, permissions = ?, status = ?, is_salary_eligible = ?, password_hash = ?
         WHERE id = ?
-      `).run(updatedName, updatedRole, updatedPermissions, updatedStatus, hash, targetId);
+      `).run(updatedName, updatedRole, updatedPermissions, updatedStatus, updatedEligible, hash, targetId);
     } else {
       db.prepare(`
         UPDATE users
-        SET name = ?, role = ?, permissions = ?, status = ?
+        SET name = ?, role = ?, permissions = ?, status = ?, is_salary_eligible = ?
         WHERE id = ?
-      `).run(updatedName, updatedRole, updatedPermissions, updatedStatus, targetId);
+      `).run(updatedName, updatedRole, updatedPermissions, updatedStatus, updatedEligible, targetId);
     }
 
     const updated = db.prepare('SELECT * FROM users WHERE id = ?').get(targetId);

@@ -62,6 +62,8 @@ function rowToOrder(row) {
     status: row.status,
     notes: row.notes,
     images: parseImages(row.images),
+    assignedUserId: row.assigned_user_id || '',
+    assignedUserName: row.assigned_user_name || '',
     createdAt: row.created_at
   };
 }
@@ -108,13 +110,24 @@ router.post('/', requireOrderManagePermission, (req, res) => {
     const today = new Date().toLocaleDateString('vi-VN');
     const imagesJson = JSON.stringify(parseImages(data.images));
 
+    // Resolve assigned user (default to logged-in user)
+    const assignedUserId = (data.assignedUserId || req.user?.id || '').trim();
+    let assignedUserName = (data.assignedUserName || '').trim();
+    if (!assignedUserName && assignedUserId) {
+      const u = db.prepare('SELECT name FROM users WHERE id = ?').get(assignedUserId);
+      assignedUserName = u?.name || req.user?.name || '';
+    } else if (!assignedUserName && req.user) {
+      assignedUserName = req.user.name || '';
+    }
+
     db.prepare(`
       INSERT INTO orders (
         id, order_date, customer_name, channel, phone, product_name,
         quantity, unit_price, total_amount, deposit_amount, remaining_amount,
         delivery_date, delivery_time, delivery_type, delivery_address,
-        card_message, recipient_name, recipient_phone, status, notes, images
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        card_message, recipient_name, recipient_phone, status, notes, images,
+        assigned_user_id, assigned_user_name
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       newId,
       data.orderDate || today,
@@ -136,7 +149,9 @@ router.post('/', requireOrderManagePermission, (req, res) => {
       (data.recipientPhone || '').trim(),
       status,
       (data.notes || '').trim(),
-      imagesJson
+      imagesJson,
+      assignedUserId,
+      assignedUserName
     );
 
     const newRow = db.prepare('SELECT * FROM orders WHERE id = ?').get(newId);
@@ -163,6 +178,13 @@ router.put('/:id', requireOrderManagePermission, (req, res) => {
     const remainingAmount = isCompleted ? 0 : Math.max(0, totalAmount - depositAmount);
     const imagesJson = JSON.stringify(parseImages(data.images !== undefined ? data.images : existing.images));
 
+    let assignedUserId = data.assignedUserId !== undefined ? (data.assignedUserId || '').trim() : (existing.assigned_user_id || '');
+    let assignedUserName = data.assignedUserName !== undefined ? (data.assignedUserName || '').trim() : (existing.assigned_user_name || '');
+    if (data.assignedUserId && !data.assignedUserName) {
+      const u = db.prepare('SELECT name FROM users WHERE id = ?').get(data.assignedUserId);
+      if (u) assignedUserName = u.name;
+    }
+
     db.prepare(`
       UPDATE orders SET
         order_date = ?, customer_name = ?, channel = ?, phone = ?,
@@ -170,7 +192,8 @@ router.put('/:id', requireOrderManagePermission, (req, res) => {
         deposit_amount = ?, remaining_amount = ?, delivery_date = ?,
         delivery_time = ?, delivery_type = ?, delivery_address = ?,
         card_message = ?, recipient_name = ?, recipient_phone = ?,
-        status = ?, notes = ?, images = ?
+        status = ?, notes = ?, images = ?,
+        assigned_user_id = ?, assigned_user_name = ?
       WHERE id = ?
     `).run(
       (data.orderDate ?? existing.order_date),
@@ -189,6 +212,8 @@ router.put('/:id', requireOrderManagePermission, (req, res) => {
       status,
       ((data.notes ?? existing.notes) || '').trim(),
       imagesJson,
+      assignedUserId,
+      assignedUserName,
       id
     );
 

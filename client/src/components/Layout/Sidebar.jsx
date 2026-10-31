@@ -8,6 +8,7 @@ import {
   ShoppingBag,
   CalendarClock,
   Wallet,
+  DollarSign,
   Users,
   ShieldCheck,
   Shield,
@@ -26,6 +27,7 @@ export default function Sidebar({ currentView, onNavigate, totalOrdersCount, pen
     { key: 'orders', icon: ShoppingBag, label: 'Đơn hàng', badge: orderCount > 0 ? orderCount : null },
     { key: 'timeline', icon: CalendarClock, label: 'Tiến độ cắm hoa' },
     { key: 'expenses', icon: Wallet, label: 'Vốn & Chi phí' },
+    { key: 'salary', icon: DollarSign, label: 'Quản lý lương' },
     { key: 'users', icon: Users, label: 'Quản lý thành viên' },
   ];
 

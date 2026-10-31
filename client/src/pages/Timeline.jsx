@@ -7,7 +7,7 @@ import { useState, useMemo } from 'react';
 import {
   Flame, Calendar, Clock, Flower2, FileText, Truck, Store,
   Camera, Images, Maximize2, MessageSquare, Phone, Package,
-  Search, X, Sparkles, CheckCircle2, AlertCircle, RotateCcw
+  Search, X, Sparkles, CheckCircle2, AlertCircle, RotateCcw, UserCheck
 } from 'lucide-react';
 import DatePicker from '../components/UI/DatePicker';
 import ConfirmDeliveryModal from '../components/UI/ConfirmDeliveryModal';
@@ -785,6 +785,12 @@ export default function Timeline({ orders, onUpdateStatus, onOpenGallery }) {
                               <Phone size={11} />
                               <span>{o.phone}</span>
                             </a>
+                          )}
+                          {o.assignedUserName && (
+                            <span style={{ fontSize: 11, background: 'var(--primary-subtle)', color: 'var(--primary)', padding: '1px 6px', borderRadius: 8, display: 'inline-flex', alignItems: 'center', gap: 3 }} title="Người tiếp nhận & xử lý đơn">
+                              <UserCheck size={10} />
+                              <span>{o.assignedUserName}</span>
+                            </span>
                           )}
                         </div>
 

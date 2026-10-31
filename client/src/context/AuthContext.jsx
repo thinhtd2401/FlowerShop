@@ -122,7 +122,7 @@ export function AuthProvider({ children }) {
 
   /**
    * Screen Permission Checker
-   * @param {string} screenKey - 'dashboard' | 'orders' | 'timeline' | 'expenses' | 'users'
+   * @param {string} screenKey - 'dashboard' | 'orders' | 'timeline' | 'expenses' | 'users' | 'salary'
    */
   const hasPermission = useCallback((screenKey) => {
     if (!user) return false;
@@ -132,8 +132,8 @@ export function AuthProvider({ children }) {
       return true;
     }
 
-    // Staff cannot access Dashboard or User Management
-    if (screenKey === 'dashboard' || screenKey === 'users') {
+    // Staff CANNOT access Dashboard, User Management, or Salary
+    if (screenKey === 'dashboard' || screenKey === 'users' || screenKey === 'salary') {
       return false;
     }
 

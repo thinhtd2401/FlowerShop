@@ -12,7 +12,8 @@ import DatePicker from '../UI/DatePicker';
 import InAppCameraModal from '../UI/InAppCameraModal';
 import ConfirmDeleteModal from '../UI/ConfirmDeleteModal';
 import ConfirmDeliveryModal from '../UI/ConfirmDeliveryModal';
-import { uploadApi } from '../../api';
+import { uploadApi, usersApi } from '../../api';
+import { useAuth } from '../../hooks/useAuth';
 import { compressImage, compressImages } from '../../utils/imageCompressor';
 import {
   saveOrderDraft,
@@ -101,11 +102,25 @@ const DEFAULT_FORM = {
   recipientPhone: '',
   cardMessage: '',
   notes: '',
-  images: []
+  images: [],
+  assignedUserId: '',
+  assignedUserName: ''
 };
 
 export default function OrderModal({ isOpen, order, onClose, onSave, onDelete }) {
+  const { user: currentUser } = useAuth();
+  const [assignees, setAssignees] = useState([]);
   const [form, setForm] = useState(DEFAULT_FORM);
+
+  useEffect(() => {
+    if (isOpen) {
+      usersApi.getAssignees()
+        .then(data => {
+          if (Array.isArray(data)) setAssignees(data);
+        })
+        .catch(err => console.warn('Lỗi tải danh sách người tiếp nhận:', err));
+    }
+  }, [isOpen]);
   const [showPrintTag, setShowPrintTag] = useState(false);
   const [timeSession, setTimeSession] = useState('all');
   const [isUploadingImages, setIsUploadingImages] = useState(false);
@@ -135,12 +150,24 @@ export default function OrderModal({ isOpen, order, onClose, onSave, onDelete })
   useEffect(() => {
     if (order) {
       const resolvedChannel = order.channel === 'Threads' ? 'Thread' : (order.channel || 'Thread');
-      setForm({ ...DEFAULT_FORM, ...order, channel: resolvedChannel, images: order.images || [] });
+      setForm({
+        ...DEFAULT_FORM,
+        ...order,
+        channel: resolvedChannel,
+        assignedUserId: order.assignedUserId || '',
+        assignedUserName: order.assignedUserName || '',
+        images: order.images || []
+      });
       setIsDraftRestored(false);
     } else if (isOpen) {
       const savedDraft = getOrderDraft();
       if (savedDraft && hasSubstantialData(savedDraft)) {
-        setForm({ ...DEFAULT_FORM, ...savedDraft });
+        setForm({
+          ...DEFAULT_FORM,
+          ...savedDraft,
+          assignedUserId: savedDraft.assignedUserId || currentUser?.id || '',
+          assignedUserName: savedDraft.assignedUserName || currentUser?.name || ''
+        });
         setIsDraftRestored(true);
       } else {
         const today = getTodayFormatted();
@@ -148,13 +175,15 @@ export default function OrderModal({ isOpen, order, onClose, onSave, onDelete })
           ...DEFAULT_FORM,
           orderDate: today,
           deliveryDate: today,
+          assignedUserId: currentUser?.id || '',
+          assignedUserName: currentUser?.name || '',
           images: []
         });
         setIsDraftRestored(false);
       }
     }
     setShowPrintTag(false);
-  }, [order, isOpen]);
+  }, [order, isOpen, currentUser]);
 
   // Tự động lưu bản nháp theo thời gian thực khi người dùng nhập liệu (chỉ áp dụng khi tạo đơn mới)
   useEffect(() => {
@@ -173,6 +202,8 @@ export default function OrderModal({ isOpen, order, onClose, onSave, onDelete })
       ...DEFAULT_FORM,
       orderDate: today,
       deliveryDate: today,
+      assignedUserId: currentUser?.id || '',
+      assignedUserName: currentUser?.name || '',
       images: []
     });
     setIsDraftRestored(false);
@@ -529,6 +560,34 @@ export default function OrderModal({ isOpen, order, onClose, onSave, onDelete })
                   <option value="cancelled">Đã hủy</option>
                 </select>
               </div>
+            </div>
+
+            {/* Row 2.5: Người tiếp nhận & xử lý đơn */}
+            <div className="form-group" style={{ marginBottom: 14 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600 }}>
+                <UserCheck size={14} color="var(--primary)" />
+                <span>Người Tiếp Nhận &amp; Xử Lý Đơn *</span>
+              </label>
+              <select
+                id="orderAssignedUser"
+                value={form.assignedUserId || ''}
+                onChange={e => {
+                  const selectedId = e.target.value;
+                  const found = assignees.find(u => u.id === selectedId);
+                  setForm(prev => ({
+                    ...prev,
+                    assignedUserId: selectedId,
+                    assignedUserName: found ? found.name : ''
+                  }));
+                }}
+              >
+                <option value="">-- Chọn người tiếp nhận --</option>
+                {assignees.map(u => (
+                  <option key={u.id} value={u.id}>
+                    {u.name} ({u.role === 'admin' ? 'Admin' : u.role === 'manager' ? 'Quản lý' : 'Nhân viên'})
+                  </option>
+                ))}
+              </select>
             </div>
 
             {/* Row 3: Mẫu hoa & Preset */}

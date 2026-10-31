@@ -35,6 +35,7 @@ export default function Header({
     orders: { title: 'Quản Lý Đơn Hàng', subtitle: 'Theo dõi và xử lý tất cả đơn đặt hoa' },
     timeline: { title: 'Tiến Độ Cắm Hoa', subtitle: 'Lịch cắm và giao hoa theo ngày & khung giờ' },
     expenses: { title: 'Vốn & Chi Phí', subtitle: 'Quản lý chi phí nhập hàng và vật tư' },
+    salary: { title: 'Quản Lý & Bảng Tính Lương', subtitle: 'Phân chia lợi nhuận theo tỷ lệ ngày & thống kê đơn xử lý' },
     users: { title: 'Quản Lý Thành Viên & Phân Quyền', subtitle: 'Phân quyền chi tiết cho nhân viên theo từng màn hình nghiệp vụ' },
   };
 
@@ -61,90 +62,84 @@ export default function Header({
           )}
         </button>
 
-        <div className="header-mobile-brand">
-          <div className="logo">
-            <Flower2 size={20} color="#ffffff" />
-          </div>
-          <div className="title">KHflower Shop</div>
-        </div>
-        <div className="header-title-wrapper">
-          <h2 id="pageTitle">{title}</h2>
-          <span className="header-subtitle" id="pageSubtitle">{subtitle}</span>
+        <div className="view-title">
+          <h2>{title}</h2>
+          <p>{subtitle}</p>
         </div>
       </div>
 
       <div className="header-actions">
-        {/* Search Bar - Hidden on Users view */}
-        {currentView !== 'users' && (
-          <div className="search-box">
-            <span className="search-icon">
-              <Search size={16} />
-            </span>
-            <input
-              type="text"
-              id="globalSearch"
-              placeholder="Tìm tên khách, SĐT, mẫu hoa..."
-              onChange={(e) => onSearch?.(e.target.value)}
-            />
-          </div>
+        {/* Quick Search */}
+        <div className="search-box">
+          <Search size={16} />
+          <input
+            type="text"
+            id="searchInput"
+            placeholder="Tìm đơn, khách, SĐT..."
+            onChange={e => onSearch(e.target.value)}
+          />
+        </div>
+
+        {/* Export Excel Button (Only for views with orders or expenses) */}
+        {(currentView === 'orders' || currentView === 'dashboard') && (
+          <button
+            type="button"
+            id="btnExportExcel"
+            className="btn btn-secondary btn-icon-mobile"
+            onClick={onExportExcel}
+            title="Xuất dữ liệu ra file Excel"
+          >
+            <FileSpreadsheet size={16} />
+            <span className="btn-text">Xuất Excel</span>
+          </button>
         )}
 
-        {/* Theme Toggle (Dark / Light) */}
+        {/* Create Expense (Only if user has expenses permission) */}
+        {canAddExpense && (currentView === 'expenses' || currentView === 'dashboard') && (
+          <button
+            type="button"
+            id="btnOpenExpenseModal"
+            className="btn btn-secondary btn-icon-mobile"
+            onClick={onAddExpense}
+            title="Ghi nhận khoản chi phí hoặc tiền nhập hoa mới"
+          >
+            <PlusCircle size={16} />
+            <span className="btn-text">Thêm Chi Phí</span>
+          </button>
+        )}
+
+        {/* Create Order (Only if user has orders permission) */}
+        {canAddOrder && (
+          <button
+            type="button"
+            id="btnOpenOrderModal"
+            className="btn btn-primary"
+            onClick={onAddOrder}
+            title="Lên đơn đặt hoa mới"
+          >
+            <Plus size={16} />
+            <span>Tạo Đơn Mới</span>
+          </button>
+        )}
+
+        {/* Theme Toggle Button */}
         <button
           type="button"
+          id="btnToggleTheme"
           className="theme-toggle-btn"
           onClick={onToggleTheme}
           title={theme === 'dark' ? 'Chuyển sang giao diện Sáng' : 'Chuyển sang giao diện Tối'}
-          aria-label="Đổi giao diện Sáng / Tối"
+          aria-label="Đổi giao diện"
         >
           {theme === 'dark' ? (
-            <Sun size={18} color="#f59e0b" />
+            <Sun size={17} className="theme-icon sun" />
           ) : (
-            <Moon size={18} color="var(--text-muted)" />
+            <Moon size={17} className="theme-icon moon" />
           )}
         </button>
 
-        {/* Excel Export: Hidden on Dashboard and Users view */}
-        {currentView !== 'dashboard' && currentView !== 'users' && (
-          <button
-            type="button"
-            className="btn btn-secondary"
-            onClick={onExportExcel}
-            title="Xuất file báo cáo Excel (.xlsx 3 Sheet)"
-          >
-            <FileSpreadsheet size={16} />
-            <span>Xuất Excel</span>
-          </button>
-        )}
-
-        {/* Add Expense Button - Protected by 'expenses' permission */}
-        {canAddExpense && (
-          <button
-            id="btnAddExpense"
-            className="btn btn-outline-primary"
-            onClick={onAddExpense}
-            title="Thêm khoản chi phí vốn"
-          >
-            <PlusCircle size={16} />
-            <span>Chi phí</span>
-          </button>
-        )}
-
-        {/* Add Order Button - Protected by 'orders' permission */}
-        {canAddOrder && (
-          <button
-            id="btnAddOrder"
-            className="btn btn-primary"
-            onClick={onAddOrder}
-            title="Tạo đơn hàng mới"
-          >
-            <Plus size={16} />
-            <span>Tạo đơn mới</span>
-          </button>
-        )}
-
-        {/* User Profile & Logout Menu */}
-        <UserMenu onNavigateToUsers={() => onNavigate?.('users')} />
+        {/* User Profile & Menu */}
+        <UserMenu onNavigate={onNavigate} />
       </div>
     </header>
   );

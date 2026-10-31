@@ -14,6 +14,7 @@ import Dashboard from './pages/Dashboard';
 import Orders from './pages/Orders';
 import Timeline from './pages/Timeline';
 import Expenses from './pages/Expenses';
+import SalaryManagement from './pages/SalaryManagement';
 import UserManagement from './pages/UserManagement';
 import LoginPage from './pages/LoginPage';
 import { useAuth } from './hooks/useAuth';
@@ -106,15 +107,16 @@ export default function App() {
     setOrderModalOpenFlag(true);
   }, []);
 
-  const handleEditOrder = useCallback((order) => {
-    setEditingOrder(order);
-    setOrderModalOpen(true);
-  }, []);
-
   const handleCloseOrderModal = useCallback(() => {
     setOrderModalOpen(false);
     setEditingOrder(null);
     setOrderModalOpenFlag(false);
+  }, []);
+
+  const handleEditOrder = useCallback((order) => {
+    setEditingOrder(order);
+    setOrderModalOpen(true);
+    setOrderModalOpenFlag(true);
   }, []);
 
   const handleOpenAddExpense = useCallback(() => {
@@ -134,8 +136,8 @@ export default function App() {
         showToast('Cập nhật đơn hàng thành công!', 'success');
       } else {
         await createOrder(formData);
-        clearOrderDraft();
         showToast('Tạo đơn hàng mới thành công!', 'success');
+        clearOrderDraft();
       }
       setRefreshTrigger(prev => prev + 1);
     } catch {
@@ -282,6 +284,9 @@ export default function App() {
             onDeleteExpense={handleDeleteExpense}
           />
         );
+      case 'salary':
+        if (!hasPermission('salary')) return null;
+        return <SalaryManagement showToast={showToast} />;
       case 'users':
         if (!hasPermission('users')) return null;
         return <UserManagement showToast={showToast} />;

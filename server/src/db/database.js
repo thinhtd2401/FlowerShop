@@ -63,12 +63,25 @@ db.exec(`
     role TEXT DEFAULT 'staff',
     permissions TEXT DEFAULT '["orders","timeline"]',
     status TEXT DEFAULT 'active',
+    is_salary_eligible INTEGER DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     last_login_at DATETIME
   );
+
+  CREATE TABLE IF NOT EXISTS daily_salary_config (
+    id TEXT PRIMARY KEY,
+    date TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    percentage REAL NOT NULL,
+    is_participating INTEGER DEFAULT 1,
+    notes TEXT DEFAULT '',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(date, user_id)
+  );
 `);
 
-// Safe migrations for new fields
+// Safe migrations for new fields in orders table
 const orderColumns = db.prepare("PRAGMA table_info(orders)").all().map(c => c.name);
 if (!orderColumns.includes('delivery_address')) {
   db.exec("ALTER TABLE orders ADD COLUMN delivery_address TEXT DEFAULT ''");
@@ -84,6 +97,18 @@ if (!orderColumns.includes('recipient_phone')) {
 }
 if (!orderColumns.includes('images')) {
   db.exec("ALTER TABLE orders ADD COLUMN images TEXT DEFAULT '[]'");
+}
+if (!orderColumns.includes('assigned_user_id')) {
+  db.exec("ALTER TABLE orders ADD COLUMN assigned_user_id TEXT DEFAULT ''");
+}
+if (!orderColumns.includes('assigned_user_name')) {
+  db.exec("ALTER TABLE orders ADD COLUMN assigned_user_name TEXT DEFAULT ''");
+}
+
+// Safe migrations for new fields in users table
+const userColumns = db.prepare("PRAGMA table_info(users)").all().map(c => c.name);
+if (!userColumns.includes('is_salary_eligible')) {
+  db.exec("ALTER TABLE users ADD COLUMN is_salary_eligible INTEGER DEFAULT 0");
 }
 
 module.exports = db;

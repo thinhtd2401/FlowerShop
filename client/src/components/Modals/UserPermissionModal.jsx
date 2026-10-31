@@ -17,7 +17,8 @@ import {
   AlertCircle,
   Save,
   UserCheck,
-  UserX
+  UserX,
+  DollarSign
 } from 'lucide-react';
 
 export default function UserPermissionModal({
@@ -35,6 +36,7 @@ export default function UserPermissionModal({
   const [role, setRole] = useState('staff');
   const [permissions, setPermissions] = useState(['orders', 'timeline']);
   const [status, setStatus] = useState('active');
+  const [isSalaryEligible, setIsSalaryEligible] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -46,6 +48,7 @@ export default function UserPermissionModal({
       setRole(user.role || 'staff');
       setPermissions(Array.isArray(user.permissions) ? user.permissions : ['orders', 'timeline']);
       setStatus(user.status || 'active');
+      setIsSalaryEligible(Boolean(user.isSalaryEligible));
       setErrorMsg('');
     } else {
       setName('');
@@ -54,6 +57,7 @@ export default function UserPermissionModal({
       setRole('staff');
       setPermissions(['orders', 'timeline']);
       setStatus('active');
+      setIsSalaryEligible(false);
       setErrorMsg('');
     }
   }, [user, isOpen]);
@@ -256,6 +260,39 @@ export default function UserPermissionModal({
                   )}
                 </div>
               </div>
+            </div>
+
+            {/* Salary Eligibility Section */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '12px 14px',
+                borderRadius: 10,
+                background: isSalaryEligible ? 'var(--primary-subtle)' : 'var(--bg-app)',
+                border: isSalaryEligible ? '1.5px solid var(--primary)' : '1px solid var(--border-color)',
+                cursor: 'pointer'
+              }}
+              onClick={() => setIsSalaryEligible(!isSalaryEligible)}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <DollarSign size={18} color="var(--primary)" />
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: 13.5, color: 'var(--text-main)' }}>
+                    Tham gia tính lương chia theo ngày
+                  </div>
+                  <div style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>
+                    Tự động nhận phần chia lợi nhuận mỗi ngày cùng danh sách tính lương
+                  </div>
+                </div>
+              </div>
+              <input
+                type="checkbox"
+                checked={isSalaryEligible}
+                onChange={() => {}}
+                style={{ width: 18, height: 18, accentColor: 'var(--primary)', cursor: 'pointer' }}
+              />
             </div>
 
             {/* Granular Screen Permissions Section */}

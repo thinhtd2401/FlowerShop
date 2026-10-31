@@ -43,8 +43,9 @@ export const authApi = {
   changePassword: (data) => api.put('/auth/change-password', data).then(r => r.data),
 };
 
-// Users API (Admin / Manager only)
+// Users API
 export const usersApi = {
+  getAssignees: () => api.get('/users/assignees').then(r => r.data),
   getAll: () => api.get('/users').then(r => r.data),
   create: (data) => api.post('/users', data).then(r => r.data),
   update: (id, data) => api.put(`/users/${id}`, data).then(r => r.data),
@@ -81,6 +82,15 @@ export const expensesApi = {
 // Metrics API
 export const metricsApi = {
   get: (params) => api.get('/metrics', { params }).then(r => r.data),
+};
+
+// Salary API (Admin / Manager only)
+export const salaryApi = {
+  getConfig: () => api.get('/salary/config').then(r => r.data),
+  updateConfig: (data) => api.put('/salary/config', data).then(r => r.data),
+  getOverview: (params) => api.get('/salary/overview', { params }).then(r => r.data),
+  saveDailyAllocation: (data) => api.post('/salary/daily-allocation', data).then(r => r.data),
+  resetDailyAllocation: (date) => api.delete(`/salary/daily-allocation/${encodeURIComponent(date.replace(/\//g, '-'))}`).then(r => r.data),
 };
 
 export default api;
