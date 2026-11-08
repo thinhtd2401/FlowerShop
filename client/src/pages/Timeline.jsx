@@ -7,11 +7,83 @@ import { useState, useMemo } from 'react';
 import {
   Flame, Calendar, Clock, Flower2, FileText, Truck, Store,
   Camera, Images, Maximize2, MessageSquare, Phone, Package,
-  Search, X, Sparkles, CheckCircle2, AlertCircle, RotateCcw, UserCheck
+  Search, X, Sparkles, CheckCircle2, AlertCircle, RotateCcw, UserCheck,
+  MessageCircle, AtSign, MapPin, User, ExternalLink, Filter
 } from 'lucide-react';
 import DatePicker from '../components/UI/DatePicker';
 import ConfirmDeliveryModal from '../components/UI/ConfirmDeliveryModal';
 import { formatMoney, getStatusInfo, removeVietnameseTones, parseDateToComparable } from '../utils/format';
+
+function getChannelConfig(channel) {
+  const norm = (channel || '').trim().toLowerCase();
+  if (norm.includes('zalo')) {
+    return {
+      label: 'Zalo',
+      color: '#0068ff',
+      bg: 'rgba(0, 104, 255, 0.09)',
+      border: 'rgba(0, 104, 255, 0.28)',
+      icon: MessageSquare
+    };
+  }
+  if (norm.includes('face') || norm.includes('fb')) {
+    return {
+      label: 'Facebook',
+      color: '#1877f2',
+      bg: 'rgba(24, 119, 242, 0.09)',
+      border: 'rgba(24, 119, 242, 0.28)',
+      icon: MessageCircle
+    };
+  }
+  if (norm.includes('insta') || norm.includes('ig')) {
+    return {
+      label: 'Instagram',
+      color: '#e1306c',
+      bg: 'rgba(225, 48, 108, 0.09)',
+      border: 'rgba(225, 48, 108, 0.28)',
+      icon: Camera
+    };
+  }
+  if (norm.includes('thread')) {
+    return {
+      label: 'Thread',
+      color: '#475569',
+      bg: 'rgba(71, 85, 105, 0.09)',
+      border: 'rgba(71, 85, 105, 0.28)',
+      icon: AtSign
+    };
+  }
+  if (norm.includes('thoại') || norm.includes('hotline') || norm.includes('phone') || norm.includes('gọi')) {
+    return {
+      label: 'Điện thoại',
+      color: '#059669',
+      bg: 'rgba(5, 150, 105, 0.09)',
+      border: 'rgba(5, 150, 105, 0.28)',
+      icon: Phone
+    };
+  }
+  if (norm.includes('tiệm') || norm.includes('cửa hàng') || norm.includes('trực tiếp')) {
+    return {
+      label: 'Tại tiệm',
+      color: '#7c3aed',
+      bg: 'rgba(124, 58, 237, 0.09)',
+      border: 'rgba(124, 58, 237, 0.28)',
+      icon: Store
+    };
+  }
+  return {
+    label: channel || 'Kênh khác',
+    color: '#64748b',
+    bg: 'rgba(100, 116, 139, 0.09)',
+    border: 'rgba(100, 116, 139, 0.28)',
+    icon: MessageSquare
+  };
+}
+
+function formatPhoneForZalo(phone) {
+  if (!phone) return '';
+  const digits = String(phone).replace(/\D/g, '');
+  return digits;
+}
 
 function getTodayDMY() {
   const d = new Date();
@@ -34,11 +106,11 @@ function sortByTime(orders) {
   });
 }
 
-export default function Timeline({ orders, onUpdateStatus, onOpenGallery }) {
+export default function Timeline({ orders, onUpdateStatus, onOpenGallery, onEditOrder }) {
   const todayStr = useMemo(() => getTodayDMY(), []);
   const tomorrowStr = useMemo(() => getTomorrowDMY(), []);
 
-  // Filter modes: 'default' (Hôm nay + Ngày mai) | 'today' | 'tomorrow' | 'oct20' | 'all' | 'custom'
+  // Filter modes: 'default' (Hôm nay + Ngày mai) | 'today' | 'tomorrow' | 'all' | 'custom'
   const [filterMode, setFilterMode] = useState('default');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -46,7 +118,10 @@ export default function Timeline({ orders, onUpdateStatus, onOpenGallery }) {
   // Status Filter: 'all' | 'pending' | 'ready' | 'completed' | 'cancelled'
   const [statusFilter, setStatusFilter] = useState('all');
 
-  // Search query: Mã đơn, tên khách, SĐT, mẫu hoa
+  // Channel Filter: 'all' | 'Zalo' | 'Facebook' | 'Thread' | 'Instagram' | 'Điện thoại' | 'Tại tiệm'
+  const [channelFilter, setChannelFilter] = useState('all');
+
+  // Search query: Mã đơn, tên khách, SĐT, kênh, mẫu hoa, người nhận, địa chỉ
   const [searchQuery, setSearchQuery] = useState('');
 
   const isPeakDay = (date) => date?.includes('20/10');
@@ -59,8 +134,6 @@ export default function Timeline({ orders, onUpdateStatus, onOpenGallery }) {
     let tomorrowBouquets = 0;
     let defaultOrders = 0;
     let defaultBouquets = 0;
-    let oct20Orders = 0;
-    let oct20Bouquets = 0;
     let allBouquets = 0;
 
     orders.forEach(o => {
@@ -82,10 +155,6 @@ export default function Timeline({ orders, onUpdateStatus, onOpenGallery }) {
         defaultOrders++;
         if (o.status !== 'cancelled') defaultBouquets += qty;
       }
-      if (d?.includes('20/10')) {
-        oct20Orders++;
-        if (o.status !== 'cancelled') oct20Bouquets += qty;
-      }
     });
 
     return {
@@ -95,8 +164,6 @@ export default function Timeline({ orders, onUpdateStatus, onOpenGallery }) {
       todayBouquets,
       tomorrow: tomorrowOrders,
       tomorrowBouquets,
-      oct20: oct20Orders,
-      oct20Bouquets,
       all: orders.length,
       allBouquets
     };
@@ -114,9 +181,6 @@ export default function Timeline({ orders, onUpdateStatus, onOpenGallery }) {
       }
       if (filterMode === 'tomorrow') {
         return d === tomorrowStr;
-      }
-      if (filterMode === 'oct20') {
-        return d?.includes('20/10');
       }
       if (filterMode === 'custom') {
         if (!startDate && !endDate) return true;
@@ -187,11 +251,32 @@ export default function Timeline({ orders, onUpdateStatus, onOpenGallery }) {
     const rawSearch = searchQuery.trim().toLowerCase();
 
     Object.values(dateMap).forEach(group => {
-      // Lọc các đơn hiển thị thỏa mãn statusFilter và searchQuery
+      // Lọc các đơn hiển thị thỏa mãn statusFilter, channelFilter và searchQuery
       group.visibleOrders = group.allDateOrders.filter(o => {
         // Status filter
         if (statusFilter !== 'all' && o.status !== statusFilter) {
           return false;
+        }
+
+        // Channel filter
+        if (channelFilter !== 'all') {
+          const normChannel = (o.channel || '').toLowerCase();
+          const target = channelFilter.toLowerCase();
+          if (target === 'thread') {
+            if (!normChannel.includes('thread')) return false;
+          } else if (target === 'facebook') {
+            if (!normChannel.includes('face') && !normChannel.includes('fb')) return false;
+          } else if (target === 'instagram') {
+            if (!normChannel.includes('insta') && !normChannel.includes('ig')) return false;
+          } else if (target === 'zalo') {
+            if (!normChannel.includes('zalo')) return false;
+          } else if (target === 'điện thoại') {
+            if (!normChannel.includes('thoại') && !normChannel.includes('hotline') && !normChannel.includes('phone') && !normChannel.includes('gọi')) return false;
+          } else if (target === 'tại tiệm') {
+            if (!normChannel.includes('tiệm') && !normChannel.includes('cửa hàng') && !normChannel.includes('trực tiếp')) return false;
+          } else {
+            if (!normChannel.includes(target)) return false;
+          }
         }
 
         // Search query
@@ -199,8 +284,11 @@ export default function Timeline({ orders, onUpdateStatus, onOpenGallery }) {
           const idMatch = (o.id || '').toLowerCase().includes(rawSearch);
           const nameMatch = removeVietnameseTones(o.customerName).includes(normalizedSearch);
           const phoneMatch = (o.phone || '').includes(rawSearch) || (o.recipientPhone || '').includes(rawSearch);
+          const recipientMatch = removeVietnameseTones(o.recipientName).includes(normalizedSearch);
+          const addressMatch = removeVietnameseTones(o.deliveryAddress).includes(normalizedSearch);
+          const channelMatch = removeVietnameseTones(o.channel).includes(normalizedSearch);
           const prodMatch = removeVietnameseTones(o.productName).includes(normalizedSearch);
-          if (!idMatch && !nameMatch && !phoneMatch && !prodMatch) {
+          if (!idMatch && !nameMatch && !phoneMatch && !recipientMatch && !addressMatch && !channelMatch && !prodMatch) {
             return false;
           }
         }
@@ -250,7 +338,7 @@ export default function Timeline({ orders, onUpdateStatus, onOpenGallery }) {
       };
       try { return parseDate(a.date) - parseDate(b.date); } catch { return 0; }
     });
-  }, [dateFilteredOrders, statusFilter, searchQuery]);
+  }, [dateFilteredOrders, statusFilter, channelFilter, searchQuery]);
 
   const [pendingDeliveryOrder, setPendingDeliveryOrder] = useState(null);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
@@ -278,6 +366,7 @@ export default function Timeline({ orders, onUpdateStatus, onOpenGallery }) {
 
   const handleResetFilters = () => {
     setStatusFilter('all');
+    setChannelFilter('all');
     setSearchQuery('');
     setFilterMode('default');
     setStartDate('');
@@ -336,21 +425,6 @@ export default function Timeline({ orders, onUpdateStatus, onOpenGallery }) {
             >
               <span>Ngày mai ({tomorrowStr.slice(0, 5)})</span>
               <span className="pill-count">{dateCounts.tomorrow} đơn · {dateCounts.tomorrowBouquets} bó</span>
-            </button>
-
-            <button
-              type="button"
-              className={`timeline-pill ${filterMode === 'oct20' ? 'active' : ''}`}
-              onClick={() => {
-                setFilterMode('oct20');
-                setStartDate('');
-                setEndDate('');
-              }}
-              style={{ color: filterMode === 'oct20' ? '#ffffff' : '#b45309' }}
-            >
-              <Flame size={14} color={filterMode === 'oct20' ? '#ffffff' : '#f97316'} />
-              <span>Đợt 20/10</span>
-              <span className="pill-count">{dateCounts.oct20} đơn · {dateCounts.oct20Bouquets} bó</span>
             </button>
 
             <button
@@ -471,26 +545,57 @@ export default function Timeline({ orders, onUpdateStatus, onOpenGallery }) {
             </button>
           </div>
 
-          {/* Quick Search Box */}
-          <div className="timeline-search-box">
-            <Search size={15} className="timeline-search-icon" />
-            <input
-              type="text"
-              className="timeline-search-input"
-              placeholder="Tìm mã đơn, tên khách, SĐT, mẫu hoa..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                className="timeline-search-clear"
-                onClick={() => setSearchQuery('')}
-                title="Xóa tìm kiếm"
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', flex: '1 1 300px', justifyContent: 'flex-end' }}>
+            {/* Channel Filter Selector */}
+            <div className="timeline-channel-filter" title="Lọc đơn hoa theo kênh tiếp nhận">
+              <Filter size={13} className="channel-filter-icon" />
+              <select
+                className="timeline-channel-select"
+                value={channelFilter}
+                onChange={(e) => setChannelFilter(e.target.value)}
+                aria-label="Lọc theo kênh tiếp nhận"
               >
-                <X size={14} />
-              </button>
-            )}
+                <option value="all">Tất cả kênh</option>
+                <option value="Zalo">Zalo</option>
+                <option value="Facebook">Facebook</option>
+                <option value="Thread">Thread</option>
+                <option value="Instagram">Instagram</option>
+                <option value="Điện thoại">Điện thoại / Hotline</option>
+                <option value="Tại tiệm">Tại tiệm</option>
+              </select>
+              {channelFilter !== 'all' && (
+                <button
+                  type="button"
+                  className="btn-clear-channel"
+                  onClick={() => setChannelFilter('all')}
+                  title="Bỏ lọc kênh"
+                >
+                  <X size={12} />
+                </button>
+              )}
+            </div>
+
+            {/* Quick Search Box */}
+            <div className="timeline-search-box">
+              <Search size={15} className="timeline-search-icon" />
+              <input
+                type="text"
+                className="timeline-search-input"
+                placeholder="Tìm mã đơn, tên khách, SĐT, kênh, người nhận..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  className="timeline-search-clear"
+                  onClick={() => setSearchQuery('')}
+                  title="Xóa tìm kiếm"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -544,21 +649,23 @@ export default function Timeline({ orders, onUpdateStatus, onOpenGallery }) {
             <h4 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-main)', marginBottom: 6 }}>
               {searchQuery
                 ? `Không tìm thấy đơn hàng nào khớp với từ khóa "${searchQuery}"`
-                : statusFilter !== 'all'
-                ? `Không có đơn hàng nào ở trạng thái "${getStatusInfo(statusFilter).label}" trong khoảng ngày đã chọn`
-                : filterMode === 'default'
-                ? `Không có đơn hoa nào hẹn lấy trong Hôm nay (${todayStr}) và Ngày mai (${tomorrowStr})`
-                : filterMode === 'custom'
-                ? `Không có đơn hoa nào hẹn giao ${startDate && endDate ? `từ ngày ${startDate} đến ngày ${endDate}` : startDate ? `từ ngày ${startDate}` : endDate ? `đến ngày ${endDate}` : 'trong khoảng ngày đã chọn'}`
-                : 'Không có đơn hàng nào phù hợp với bộ lọc'}
+                : channelFilter !== 'all'
+                  ? `Không có đơn hàng nào từ kênh "${channelFilter}" trong khoảng ngày đã chọn`
+                  : statusFilter !== 'all'
+                    ? `Không có đơn hàng nào ở trạng thái "${getStatusInfo(statusFilter).label}" trong khoảng ngày đã chọn`
+                    : filterMode === 'default'
+                      ? `Không có đơn hoa nào hẹn lấy trong Hôm nay (${todayStr}) và Ngày mai (${tomorrowStr})`
+                      : filterMode === 'custom'
+                        ? `Không có đơn hoa nào hẹn giao ${startDate && endDate ? `từ ngày ${startDate} đến ngày ${endDate}` : startDate ? `từ ngày ${startDate}` : endDate ? `đến ngày ${endDate}` : 'trong khoảng ngày đã chọn'}`
+                        : 'Không có đơn hàng nào phù hợp với bộ lọc'}
             </h4>
             <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>
-              {searchQuery || statusFilter !== 'all'
-                ? 'Hãy thử thay đổi từ khóa tìm kiếm hoặc chọn xem Tất cả trạng thái đơn.'
-                : 'Bạn có thể chọn xem đợt cao điểm 20/10 hoặc xem tất cả các ngày khác trong hệ thống.'}
+              {searchQuery || statusFilter !== 'all' || channelFilter !== 'all'
+                ? 'Hãy thử thay đổi từ khóa tìm kiếm hoặc chọn xem Tất cả trạng thái / Tất cả kênh.'
+                : 'Bạn có thể chọn xem tất cả các ngày khác trong hệ thống.'}
             </p>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
-              {(searchQuery || statusFilter !== 'all' || filterMode !== 'default') && (
+              {(searchQuery || statusFilter !== 'all' || channelFilter !== 'all' || filterMode !== 'default') && (
                 <button
                   type="button"
                   className="btn btn-secondary btn-sm"
@@ -580,20 +687,6 @@ export default function Timeline({ orders, onUpdateStatus, onOpenGallery }) {
                 }}
               >
                 Xem tất cả các ngày ({dateCounts.all} đơn)
-              </button>
-              <button
-                type="button"
-                className="btn btn-secondary btn-sm"
-                onClick={() => {
-                  setFilterMode('oct20');
-                  setStartDate('');
-                  setEndDate('');
-                  setStatusFilter('all');
-                  setSearchQuery('');
-                }}
-              >
-                <Flame size={13} color="#f97316" />
-                <span>Xem đợt 20/10 ({dateCounts.oct20} đơn)</span>
               </button>
             </div>
           </div>
@@ -728,9 +821,15 @@ export default function Timeline({ orders, onUpdateStatus, onOpenGallery }) {
                           <span className="order-stt-badge" style={{ margin: 0, fontWeight: 800 }}>
                             #{orderIndex + 1}
                           </span>
-                          <span style={{ fontSize: 13, fontWeight: 700, color: isCancelled ? 'var(--text-muted)' : 'var(--primary)' }}>
-                            {o.id}
-                          </span>
+                          <button
+                            type="button"
+                            className="timeline-order-id-btn"
+                            onClick={() => onEditOrder && onEditOrder(o)}
+                            title={`Bấm để xem & chỉnh sửa toàn bộ chi tiết đơn hàng ${o.id}`}
+                          >
+                            <span>{o.id}</span>
+                            <ExternalLink size={11} className="order-id-icon" />
+                          </button>
 
                           {/* Prominent Quantity Badge */}
                           <span
@@ -763,36 +862,138 @@ export default function Timeline({ orders, onUpdateStatus, onOpenGallery }) {
                           </select>
                         </div>
 
-                        {/* Customer Info */}
-                        <div style={{ fontSize: 14.5, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                          <span style={{ textDecoration: isCancelled ? 'line-through' : 'none' }}>
-                            {o.customerName}
-                          </span>
-                          {o.phone && (
-                            <a
-                              href={`tel:${o.phone}`}
-                              style={{
-                                fontSize: 12,
-                                fontWeight: 500,
-                                color: 'var(--primary)',
-                                textDecoration: 'none',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: 3
-                              }}
-                              title="Bấm để gọi khách"
-                            >
-                              <Phone size={11} />
-                              <span>{o.phone}</span>
-                            </a>
-                          )}
-                          {o.assignedUserName && (
-                            <span style={{ fontSize: 11, background: 'var(--primary-subtle)', color: 'var(--primary)', padding: '1px 6px', borderRadius: 8, display: 'inline-flex', alignItems: 'center', gap: 3 }} title="Người tiếp nhận & xử lý đơn">
-                              <UserCheck size={10} />
-                              <span>{o.assignedUserName}</span>
-                            </span>
-                          )}
-                        </div>
+                        {/* Customer Info & Contact Channels */}
+                        {(() => {
+                          const channelCfg = getChannelConfig(o.channel);
+                          const ChannelIcon = channelCfg.icon;
+                          const cleanCustomerPhone = formatPhoneForZalo(o.phone);
+
+                          return (
+                            <div className="timeline-customer-row">
+                              <div className="customer-main-line">
+                                <span className="customer-name" style={{ textDecoration: isCancelled ? 'line-through' : 'none' }}>
+                                  {o.customerName}
+                                </span>
+
+                                {/* Channel Badge - Chuyển profile Zalo nếu là kênh Zalo & có SĐT */}
+                                {o.channel && (() => {
+                                  const isZaloChannel = (o.channel || '').toLowerCase().includes('zalo');
+                                  if (isZaloChannel && cleanCustomerPhone) {
+                                    return (
+                                      <a
+                                        href={`https://zalo.me/${cleanCustomerPhone}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="timeline-channel-badge is-link zalo-profile-btn"
+                                        style={{
+                                          color: channelCfg.color,
+                                          backgroundColor: channelCfg.bg,
+                                          borderColor: channelCfg.border
+                                        }}
+                                        title={`Bấm để mở trang cá nhân / chat Zalo của khách hàng (${o.phone})`}
+                                      >
+                                        <ChannelIcon size={11} />
+                                        <span>{channelCfg.label}</span>
+                                        <ExternalLink size={9} className="channel-badge-ext-icon" />
+                                      </a>
+                                    );
+                                  }
+
+                                  return (
+                                    <span
+                                      className="timeline-channel-badge"
+                                      style={{
+                                        color: channelCfg.color,
+                                        backgroundColor: channelCfg.bg,
+                                        borderColor: channelCfg.border
+                                      }}
+                                      title={isZaloChannel ? 'Đơn Zalo chưa có số điện thoại để mở profile' : `Kênh đặt hàng: ${o.channel}`}
+                                    >
+                                      <ChannelIcon size={11} />
+                                      <span>{channelCfg.label}</span>
+                                    </span>
+                                  );
+                                })()}
+
+                                {/* Assigned Staff */}
+                                {o.assignedUserName && (
+                                  <span className="timeline-assigned-badge" title="Người tiếp nhận & xử lý đơn">
+                                    <UserCheck size={10} />
+                                    <span>{o.assignedUserName}</span>
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Quick Contact Actions for Customer */}
+                              {o.phone && (
+                                <div className="timeline-contact-actions">
+                                  <a
+                                    href={`tel:${o.phone}`}
+                                    className="timeline-contact-action tel"
+                                    title="Gọi điện cho khách đặt"
+                                  >
+                                    <Phone size={11} />
+                                    <span>{o.phone}</span>
+                                  </a>
+                                  {cleanCustomerPhone && (
+                                    <a
+                                      href={`https://zalo.me/${cleanCustomerPhone}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="timeline-contact-action zalo"
+                                      title="Mở chat Zalo với khách đặt để gửi ảnh hoa đã cắm hoặc trao đổi"
+                                    >
+                                      <MessageSquare size={11} />
+                                      <span>Zalo</span>
+                                    </a>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
+
+                        {/* Recipient & Delivery Information Box (if specified) */}
+                        {(o.recipientName || o.recipientPhone || o.deliveryAddress) && (
+                          <div className="timeline-recipient-box">
+                            <div className="recipient-header">
+                              <div className="recipient-name-col">
+                                <User size={12} className="recipient-icon" />
+                                <span>Người nhận: <strong>{o.recipientName || 'Chưa có tên'}</strong></span>
+                              </div>
+                              {o.recipientPhone && (
+                                <div className="recipient-phone-actions">
+                                  <a
+                                    href={`tel:${o.recipientPhone}`}
+                                    className="timeline-contact-action tel-sub"
+                                    title="Gọi cho người nhận hoa"
+                                  >
+                                    <Phone size={11} />
+                                    <span>{o.recipientPhone}</span>
+                                  </a>
+                                  {formatPhoneForZalo(o.recipientPhone) && (
+                                    <a
+                                      href={`https://zalo.me/${formatPhoneForZalo(o.recipientPhone)}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="timeline-contact-action zalo-sub"
+                                      title="Mở chat Zalo với người nhận hoa"
+                                    >
+                                      <MessageSquare size={11} />
+                                      <span>Zalo</span>
+                                    </a>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                            {o.deliveryAddress && (
+                              <div className="timeline-delivery-address" title="Địa chỉ giao hoa">
+                                <MapPin size={12} className="address-icon" />
+                                <span>{o.deliveryAddress}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
 
                         {/* Flower Product Name & Quantity */}
                         <div style={{ fontSize: 13.5, color: 'var(--text-main)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600, flexWrap: 'wrap' }}>

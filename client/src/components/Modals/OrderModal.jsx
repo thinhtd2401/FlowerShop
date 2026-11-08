@@ -4,7 +4,7 @@
 import { useState, useEffect, useRef } from 'react';
 import {
   Flower2, X, Sparkles, Clock, Truck, Store, Printer, CreditCard,
-  MessageSquare, MapPin, UserCheck, Calendar, Flame, Camera, Upload,
+  MessageSquare, MapPin, UserCheck, Calendar, Camera, Upload,
   Trash2, Loader2, Image as ImageIcon, RotateCcw
 } from 'lucide-react';
 import { formatMoney } from '../../utils/format';
@@ -336,8 +336,6 @@ export default function OrderModal({ isOpen, order, onClose, onSave, onDelete })
     } else if (type === 'tomorrow') {
       d.setDate(d.getDate() + 1);
       set('deliveryDate', `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`);
-    } else if (type === 'oct20') {
-      set('deliveryDate', '20/10/2026');
     }
   };
 
@@ -883,15 +881,6 @@ export default function OrderModal({ isOpen, order, onClose, onSave, onDelete })
                       onClick={() => handleQuickDate('tomorrow')}
                     >
                       Ngày mai
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-secondary btn-sm"
-                      style={{ fontSize: 10.5, padding: '2px 6px', height: 'auto', minHeight: 24, color: '#b45309', display: 'inline-flex', alignItems: 'center', gap: 3 }}
-                      onClick={() => handleQuickDate('oct20')}
-                    >
-                      <Flame size={12} color="#f97316" />
-                      <span>20/10</span>
                     </button>
                   </div>
                 </div>

@@ -273,6 +273,7 @@ export default function App() {
             orders={orders}
             onUpdateStatus={handleUpdateStatus}
             onOpenGallery={handleOpenGallery}
+            onEditOrder={handleEditOrder}
           />
         );
       case 'expenses':

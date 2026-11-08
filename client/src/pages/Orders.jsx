@@ -8,7 +8,6 @@ import {
   Clock,
   FileText,
   Check,
-  Flame,
   Phone,
   Truck,
   Store,
@@ -76,7 +75,6 @@ export default function Orders({ orders, searchQuery, onEditOrder, onUpdateStatu
       } else {
         // Preset Quick Date filters
         if (filterDate === 'today' && !(o.deliveryDate || '').includes(todayShort)) return false;
-        if (filterDate === 'oct20' && !(o.deliveryDate || '').includes('20/10')) return false;
         if (filterDate === 'has_remain' && (o.remainingAmount || 0) <= 0) return false;
       }
 
@@ -221,17 +219,6 @@ export default function Orders({ orders, searchQuery, onEditOrder, onUpdateStatu
                 setEndDate('');
               }}>
               Hôm nay ({todayShort})
-            </button>
-            <button
-              className={`date-pill ${filterDate === 'oct20' ? 'active' : ''}`}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
-              onClick={() => {
-                setFilterDate('oct20');
-                setStartDate('');
-                setEndDate('');
-              }}>
-              <span>Đợt 20/10</span>
-              <Flame size={12} color="#f59e0b" />
             </button>
             <button
               className={`date-pill ${filterDate === 'has_remain' ? 'active' : ''}`}

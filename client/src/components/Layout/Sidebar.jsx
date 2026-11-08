@@ -98,7 +98,7 @@ export default function Sidebar({ currentView, onNavigate, totalOrdersCount, pen
 
         <div className="store-status-pill">
           <span className="pulse-dot"></span>
-          <span>Đang mở cửa • Dịp 20/10</span>
+          <span>Đang mở cửa</span>
         </div>
       </div>
     </aside>

@@ -19,10 +19,12 @@ import {
 import { useAuth } from '../../hooks/useAuth';
 import { authApi } from '../../api';
 
-export default function UserMenu({ onNavigateToUsers }) {
+export default function UserMenu({ onNavigate, onNavigateToUsers }) {
   const { user, logout } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [passwordModalOpen, setPasswordModalOpen] = useState(false);
+
+  const handleGoToUsers = onNavigate ? () => onNavigate('users') : onNavigateToUsers;
 
   // Password modal states
   const [currentPassword, setCurrentPassword] = useState('');
@@ -104,7 +106,7 @@ export default function UserMenu({ onNavigateToUsers }) {
             {user.role === 'admin' ? 'Admin' : user.role === 'manager' ? 'Quản trị' : 'Nhân viên'}
           </span>
         </div>
-        <ChevronDown size={14} className={`chevron-icon ${dropdownOpen ? 'rotate' : ''}`} />
+        <ChevronDown size={14} className={`chevron-icon user-menu-chevron ${dropdownOpen ? 'rotate' : ''}`} />
       </button>
 
       {dropdownOpen && (
@@ -121,14 +123,14 @@ export default function UserMenu({ onNavigateToUsers }) {
           </div>
 
           <div className="user-popover-menu">
-            {isManagerOrAdmin && onNavigateToUsers && (
+            {isManagerOrAdmin && handleGoToUsers && (
               <button
                 type="button"
                 id="menuNavUsers"
                 className="popover-menu-item"
                 onClick={() => {
                   setDropdownOpen(false);
-                  onNavigateToUsers();
+                  handleGoToUsers();
                 }}
               >
                 <Users size={16} />

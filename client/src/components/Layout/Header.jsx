@@ -62,16 +62,16 @@ export default function Header({
           )}
         </button>
 
-        <div className="view-title">
+        <div className="header-title-wrapper view-title">
           <h2>{title}</h2>
-          <p>{subtitle}</p>
+          <p className="header-subtitle">{subtitle}</p>
         </div>
       </div>
 
       <div className="header-actions">
         {/* Quick Search */}
         <div className="search-box">
-          <Search size={16} />
+          <Search size={16} className="search-icon" />
           <input
             type="text"
             id="searchInput"
@@ -118,7 +118,7 @@ export default function Header({
             title="Lên đơn đặt hoa mới"
           >
             <Plus size={16} />
-            <span>Tạo Đơn Mới</span>
+            <span className="btn-text">Tạo Đơn Mới</span>
           </button>
         )}
 
