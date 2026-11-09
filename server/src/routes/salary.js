@@ -105,11 +105,12 @@ router.put('/config', (req, res) => {
   }
 });
 
-// GET /api/salary/overview - Bảng tổng quan lương theo khoảng ngày & chi tiết từng ngày
+// GET /api/salary/overview - Bảng tổng quan lương theo khoảng ngày giao hàng & chi tiết từng ngày
 router.get('/overview', (req, res) => {
   try {
-    const { from, to, dateField } = req.query;
-    const filterField = dateField === 'delivery_date' ? 'delivery_date' : 'order_date';
+    const { from, to } = req.query;
+    // Cố định căn cứ tính lương theo Ngày Giao Hàng (delivery_date)
+    const filterField = 'delivery_date';
 
     const fromDate = parseDMY(from);
     const toDate = parseDMY(to);

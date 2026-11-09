@@ -157,10 +157,10 @@ export default function DailyAllocationModal({ isOpen, dayData, onClose, onSaved
             </div>
             <div>
               <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700 }}>
-                Điều Chỉnh Tỷ Lệ Lương — {dayData.date}
+                Điều Chỉnh Tỷ Lệ Lương — Ngày Giao {dayData.date}
               </h3>
               <p style={{ margin: '2px 0 0', fontSize: 12.5, color: 'var(--text-muted)' }}>
-                Tùy chỉnh tỷ lệ phần trăm theo sự tham gia thực tế của từng người trong ngày
+                Tùy chỉnh tỷ lệ phần trăm theo sự tham gia thực tế vào ngày giao hàng này
               </p>
             </div>
           </div>

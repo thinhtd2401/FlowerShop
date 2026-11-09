@@ -62,6 +62,7 @@ function rowToOrder(row) {
     status: row.status,
     notes: row.notes,
     images: parseImages(row.images),
+    customerChannelInfo: row.customer_channel_info || '',
     assignedUserId: row.assigned_user_id || '',
     assignedUserName: row.assigned_user_name || '',
     createdAt: row.created_at
@@ -126,8 +127,8 @@ router.post('/', requireOrderManagePermission, (req, res) => {
         quantity, unit_price, total_amount, deposit_amount, remaining_amount,
         delivery_date, delivery_time, delivery_type, delivery_address,
         card_message, recipient_name, recipient_phone, status, notes, images,
-        assigned_user_id, assigned_user_name
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        assigned_user_id, assigned_user_name, customer_channel_info
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       newId,
       data.orderDate || today,
@@ -151,7 +152,8 @@ router.post('/', requireOrderManagePermission, (req, res) => {
       (data.notes || '').trim(),
       imagesJson,
       assignedUserId,
-      assignedUserName
+      assignedUserName,
+      (data.customerChannelInfo || '').trim()
     );
 
     const newRow = db.prepare('SELECT * FROM orders WHERE id = ?').get(newId);
@@ -193,7 +195,8 @@ router.put('/:id', requireOrderManagePermission, (req, res) => {
         delivery_time = ?, delivery_type = ?, delivery_address = ?,
         card_message = ?, recipient_name = ?, recipient_phone = ?,
         status = ?, notes = ?, images = ?,
-        assigned_user_id = ?, assigned_user_name = ?
+        assigned_user_id = ?, assigned_user_name = ?,
+        customer_channel_info = ?
       WHERE id = ?
     `).run(
       (data.orderDate ?? existing.order_date),
@@ -214,6 +217,7 @@ router.put('/:id', requireOrderManagePermission, (req, res) => {
       imagesJson,
       assignedUserId,
       assignedUserName,
+      ((data.customerChannelInfo ?? existing.customer_channel_info) || '').trim(),
       id
     );
 

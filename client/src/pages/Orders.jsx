@@ -22,9 +22,14 @@ import {
   RotateCcw,
   X,
   Package,
-  UserCheck
+  UserCheck,
+  ExternalLink,
+  Camera,
+  AtSign,
+  MessageCircle
 } from 'lucide-react';
 import { formatMoney, getStatusInfo, parseDateToComparable, formatToDDMMYYYY, formatOrderTime } from '../utils/format';
+import { getChannelAction, cleanPhoneNumber } from '../utils/channelHelper';
 import DatePicker from '../components/UI/DatePicker';
 import ConfirmDeleteModal from '../components/UI/ConfirmDeleteModal';
 import ConfirmDeliveryModal from '../components/UI/ConfirmDeliveryModal';
@@ -86,7 +91,8 @@ export default function Orders({ orders, searchQuery, onEditOrder, onUpdateStatu
           (o.phone || '').includes(q) ||
           (o.productName || '').toLowerCase().includes(q) ||
           (o.id || '').toLowerCase().includes(q) ||
-          (o.channel || '').toLowerCase().includes(q)
+          (o.channel || '').toLowerCase().includes(q) ||
+          (o.customerChannelInfo || '').toLowerCase().includes(q)
         );
       }
       return true;
@@ -420,10 +426,75 @@ export default function Orders({ orders, searchQuery, onEditOrder, onUpdateStatu
                     )}
                   </td>
                   <td>
-                    <strong>{o.customerName}</strong>
-                    {o.phone && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{o.phone}</div>}
-                    <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 3 }}>
-                      <span style={{ fontSize: 11, background: 'var(--bg-muted)', padding: '1px 6px', borderRadius: 10 }}>{o.channel}</span>
+                    <div style={{ fontWeight: 600, color: 'var(--text-main)', fontSize: 13.5 }}>{o.customerName}</div>
+                    {o.phone && (
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11.5, marginTop: 1 }}>
+                        <a
+                          href={`tel:${o.phone}`}
+                          style={{ color: 'var(--primary)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 3 }}
+                          onClick={e => e.stopPropagation()}
+                          title="Gọi điện cho khách"
+                        >
+                          <Phone size={10} />
+                          <span>{o.phone}</span>
+                        </a>
+                      </div>
+                    )}
+                    <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center', marginTop: 4 }}>
+                      {(() => {
+                        const action = getChannelAction(o);
+                        const ChannelIcon = action.cfg?.icon || MessageSquare;
+                        if (action.hasAction && action.url) {
+                          return (
+                            <a
+                              href={action.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="channel-clickable-badge"
+                              style={{
+                                fontSize: 11,
+                                color: action.cfg.color,
+                                background: action.cfg.bg,
+                                border: `1px solid ${action.cfg.border}`,
+                                padding: '2px 7px',
+                                borderRadius: 10,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 3.5,
+                                textDecoration: 'none',
+                                fontWeight: 600,
+                                transition: 'all 0.15s ease'
+                              }}
+                              title={action.tooltip}
+                              onClick={e => e.stopPropagation()}
+                            >
+                              <ChannelIcon size={11} />
+                              <span>{action.cfg.label}</span>
+                              <ExternalLink size={9} style={{ opacity: 0.7 }} />
+                            </a>
+                          );
+                        }
+                        return (
+                          <span
+                            style={{
+                              fontSize: 11,
+                              color: action.cfg?.color || 'var(--text-muted)',
+                              background: action.cfg?.bg || 'var(--bg-muted)',
+                              border: `1px solid ${action.cfg?.border || 'transparent'}`,
+                              padding: '2px 7px',
+                              borderRadius: 10,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 3.5,
+                              fontWeight: 500
+                            }}
+                            title={action.tooltip || o.channel}
+                          >
+                            <ChannelIcon size={11} />
+                            <span>{action.cfg?.label || o.channel}</span>
+                          </span>
+                        );
+                      })()}
                       {o.assignedUserName && (
                         <span style={{ fontSize: 11, background: 'var(--primary-subtle)', color: 'var(--primary)', padding: '1px 6px', borderRadius: 10, display: 'inline-flex', alignItems: 'center', gap: 3 }} title="Người tiếp nhận & xử lý đơn">
                           <UserCheck size={10} />
@@ -577,26 +648,181 @@ export default function Orders({ orders, searchQuery, onEditOrder, onUpdateStatu
               </div>
 
               {/* Customer info & Channel */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginTop: 4 }}>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-main)' }}>{o.customerName}</div>
-                  {o.phone && (
-                    <a href={`tel:${o.phone}`} style={{ fontSize: 12.5, color: 'var(--primary)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
-                      <Phone size={12} />
-                      <span>{o.phone}</span>
-                    </a>
-                  )}
-                  {o.assignedUserName && (
-                    <div style={{ fontSize: 11, color: 'var(--primary)', display: 'inline-flex', alignItems: 'center', gap: 3, marginTop: 3 }}>
-                      <UserCheck size={11} />
-                      <span>Xử lý: <strong>{o.assignedUserName}</strong></span>
+              {(() => {
+                const action = getChannelAction(o);
+                const ChannelIcon = action.cfg?.icon || MessageSquare;
+                const cleanPhone = cleanPhoneNumber(o.phone);
+                const isZaloChannel = (o.channel || '').toLowerCase().includes('zalo');
+
+                return (
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginTop: 4 }}>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-main)' }}>{o.customerName}</div>
+                        {o.phone && (
+                          <a
+                            href={`tel:${o.phone}`}
+                            onClick={e => e.stopPropagation()}
+                            style={{ fontSize: 12.5, color: 'var(--primary)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 2 }}
+                          >
+                            <Phone size={12} />
+                            <span>{o.phone}</span>
+                          </a>
+                        )}
+                        {o.assignedUserName && (
+                          <div style={{ fontSize: 11, color: 'var(--primary)', display: 'inline-flex', alignItems: 'center', gap: 3, marginTop: 3 }}>
+                            <UserCheck size={11} />
+                            <span>Xử lý: <strong>{o.assignedUserName}</strong></span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Channel Badge */}
+                      {action.hasAction && action.url ? (
+                        <a
+                          href={action.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={e => e.stopPropagation()}
+                          style={{
+                            fontSize: 11,
+                            background: action.cfg.bg,
+                            color: action.cfg.color,
+                            border: `1px solid ${action.cfg.border}`,
+                            padding: '3px 8px',
+                            borderRadius: 12,
+                            fontWeight: 600,
+                            textDecoration: 'none',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4
+                          }}
+                          title={action.tooltip}
+                        >
+                          <ChannelIcon size={12} />
+                          <span>{action.cfg.label}</span>
+                          <ExternalLink size={10} style={{ opacity: 0.8 }} />
+                        </a>
+                      ) : (
+                        <span
+                          style={{
+                            fontSize: 11,
+                            background: action.cfg?.bg || 'var(--bg-muted)',
+                            color: action.cfg?.color || 'var(--text-muted)',
+                            border: `1px solid ${action.cfg?.border || 'transparent'}`,
+                            padding: '3px 8px',
+                            borderRadius: 12,
+                            fontWeight: 600,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4
+                          }}
+                        >
+                          <ChannelIcon size={12} />
+                          <span>{action.cfg?.label || o.channel}</span>
+                        </span>
+                      )}
                     </div>
-                  )}
-                </div>
-                <span style={{ fontSize: 11, background: 'var(--bg-muted)', padding: '2px 8px', borderRadius: 12, color: 'var(--text-muted)', fontWeight: 600 }}>
-                  {o.channel}
-                </span>
-              </div>
+
+                    {/* Quick Contact Action Bar for Mobile Touch */}
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        flexWrap: 'wrap',
+                        marginTop: 8,
+                        marginBottom: 4
+                      }}
+                    >
+                      {/* Primary Channel Action */}
+                      {action.hasAction && action.url && (
+                        <a
+                          href={action.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={e => e.stopPropagation()}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 5,
+                            background: action.cfg.color,
+                            color: '#ffffff',
+                            padding: '6px 12px',
+                            borderRadius: 8,
+                            fontSize: 12,
+                            fontWeight: 600,
+                            textDecoration: 'none',
+                            minHeight: 34,
+                            touchAction: 'manipulation'
+                          }}
+                          title={action.tooltip}
+                        >
+                          <ChannelIcon size={13} />
+                          <span>Mở {action.label}</span>
+                          <ExternalLink size={10} style={{ opacity: 0.8 }} />
+                        </a>
+                      )}
+
+                      {/* Phone call shortcut if phone exists */}
+                      {cleanPhone && action.type !== 'phone' && (
+                        <a
+                          href={`tel:${cleanPhone}`}
+                          onClick={e => e.stopPropagation()}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4,
+                            background: 'rgba(5, 150, 105, 0.08)',
+                            color: '#059669',
+                            border: '1px solid rgba(5, 150, 105, 0.22)',
+                            padding: '6px 10px',
+                            borderRadius: 8,
+                            fontSize: 12,
+                            fontWeight: 600,
+                            textDecoration: 'none',
+                            minHeight: 34,
+                            touchAction: 'manipulation'
+                          }}
+                          title={`Gọi điện cho khách: ${o.phone}`}
+                        >
+                          <Phone size={12} />
+                          <span>Gọi Điện</span>
+                        </a>
+                      )}
+
+                      {/* Zalo shortcut for other channels if customer provided phone */}
+                      {cleanPhone && !isZaloChannel && (
+                        <a
+                          href={`https://zalo.me/${cleanPhone}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={e => e.stopPropagation()}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4,
+                            background: 'rgba(0, 104, 255, 0.08)',
+                            color: '#0068ff',
+                            border: '1px solid rgba(0, 104, 255, 0.22)',
+                            padding: '6px 10px',
+                            borderRadius: 8,
+                            fontSize: 12,
+                            fontWeight: 600,
+                            textDecoration: 'none',
+                            minHeight: 34,
+                            touchAction: 'manipulation'
+                          }}
+                          title={`Mở Zalo khách qua SĐT: ${o.phone}`}
+                        >
+                          <MessageSquare size={12} />
+                          <span>Zalo</span>
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Product, Quantity & notes */}
               <div style={{ background: 'var(--bg-app)', padding: '8px 10px', borderRadius: 8, fontSize: 13 }}>

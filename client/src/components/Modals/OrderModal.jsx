@@ -5,7 +5,8 @@ import { useState, useEffect, useRef } from 'react';
 import {
   Flower2, X, Sparkles, Clock, Truck, Store, Printer, CreditCard,
   MessageSquare, MapPin, UserCheck, Calendar, Camera, Upload,
-  Trash2, Loader2, Image as ImageIcon, RotateCcw
+  Trash2, Loader2, Image as ImageIcon, RotateCcw,
+  MessageCircle, AtSign, Phone, ExternalLink, Globe
 } from 'lucide-react';
 import { formatMoney } from '../../utils/format';
 import DatePicker from '../UI/DatePicker';
@@ -15,6 +16,13 @@ import ConfirmDeliveryModal from '../UI/ConfirmDeliveryModal';
 import { uploadApi, usersApi } from '../../api';
 import { useAuth } from '../../hooks/useAuth';
 import { compressImage, compressImages } from '../../utils/imageCompressor';
+import {
+  cleanPhoneNumber,
+  resolveMessengerUrl,
+  resolveInstagramUrl,
+  resolveThreadUrl,
+  getChannelConfig
+} from '../../utils/channelHelper';
 import {
   saveOrderDraft,
   getOrderDraft,
@@ -88,6 +96,7 @@ const DEFAULT_FORM = {
   customerName: '',
   phone: '',
   channel: 'Thread',
+  customerChannelInfo: '',
   status: 'pending',
   productName: '',
   quantity: 1,
@@ -154,6 +163,7 @@ export default function OrderModal({ isOpen, order, onClose, onSave, onDelete })
         ...DEFAULT_FORM,
         ...order,
         channel: resolvedChannel,
+        customerChannelInfo: order.customerChannelInfo || '',
         assignedUserId: order.assignedUserId || '',
         assignedUserName: order.assignedUserName || '',
         images: order.images || []
@@ -202,6 +212,7 @@ export default function OrderModal({ isOpen, order, onClose, onSave, onDelete })
       ...DEFAULT_FORM,
       orderDate: today,
       deliveryDate: today,
+      customerChannelInfo: '',
       assignedUserId: currentUser?.id || '',
       assignedUserName: currentUser?.name || '',
       images: []
@@ -531,7 +542,7 @@ export default function OrderModal({ isOpen, order, onClose, onSave, onDelete })
                 <label>Kênh Tiếp Nhận</label>
                 <select id="orderChannel" value={form.channel} onChange={e => set('channel', e.target.value)}>
                   <option value="Thread">Thread</option>
-                  <option value="Facebook">Facebook</option>
+                  <option value="Facebook">Facebook (Messenger)</option>
                   <option value="Instagram">Instagram (Direct)</option>
                   <option value="Zalo">Zalo</option>
                   <option value="Điện thoại">Điện thoại / Hotline</option>
@@ -559,6 +570,350 @@ export default function OrderModal({ isOpen, order, onClose, onSave, onDelete })
                 </select>
               </div>
             </div>
+
+            {/* Row 2.1: Chi tiết & Truy cập nhanh Khách hàng theo Kênh Tiếp Nhận */}
+            {(() => {
+              const channelCfg = getChannelConfig(form.channel);
+              const cleanPhone = cleanPhoneNumber(form.phone);
+
+              if (channelCfg.key === 'zalo') {
+                return (
+                  <div
+                    className="channel-contact-box"
+                    style={{
+                      background: 'rgba(0, 104, 255, 0.04)',
+                      border: '1px solid rgba(0, 104, 255, 0.22)',
+                      borderRadius: 8,
+                      padding: '10px 12px',
+                      marginBottom: 14
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#0068ff', fontWeight: 600, fontSize: 13 }}>
+                        <MessageSquare size={15} />
+                        <span>Kênh Zalo (Kết nối qua Số điện thoại)</span>
+                      </div>
+                      {cleanPhone ? (
+                        <a
+                          href={`https://zalo.me/${cleanPhone}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 5,
+                            background: '#0068ff',
+                            color: '#ffffff',
+                            padding: '4px 10px',
+                            borderRadius: 6,
+                            fontSize: 12,
+                            fontWeight: 600,
+                            textDecoration: 'none'
+                          }}
+                          title={`Mở Zalo: ${form.phone}`}
+                        >
+                          <ExternalLink size={12} />
+                          <span>Mở Zalo Khách Hàng</span>
+                        </a>
+                      ) : (
+                        <span style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>
+                          Nhập SĐT ở trên để mở Zalo 1 chạm
+                        </span>
+                      )}
+                    </div>
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>
+                        Tên / Biệt danh Zalo phụ (Tùy chọn nếu tên Zalo khác tên khách):
+                      </label>
+                      <input
+                        type="text"
+                        style={{ fontSize: 16 }}
+                        placeholder="VD: Zalo Tiệm Hoa Nhỏ, hoặc ghi chú nick Zalo..."
+                        value={form.customerChannelInfo || ''}
+                        onChange={e => set('customerChannelInfo', e.target.value)}
+                      />
+                    </div>
+                  </div>
+                );
+              }
+
+              if (channelCfg.key === 'facebook') {
+                const messengerUrl = resolveMessengerUrl(form.customerChannelInfo);
+                return (
+                  <div
+                    className="channel-contact-box"
+                    style={{
+                      background: 'rgba(0, 132, 255, 0.04)',
+                      border: '1px solid rgba(0, 132, 255, 0.22)',
+                      borderRadius: 8,
+                      padding: '10px 12px',
+                      marginBottom: 14
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#0084ff', fontWeight: 600, fontSize: 13 }}>
+                        <MessageCircle size={15} />
+                        <span>Kênh Facebook Messenger</span>
+                      </div>
+                      {messengerUrl && (
+                        <a
+                          href={messengerUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 5,
+                            background: '#0084ff',
+                            color: '#ffffff',
+                            padding: '4px 10px',
+                            borderRadius: 6,
+                            fontSize: 12,
+                            fontWeight: 600,
+                            textDecoration: 'none'
+                          }}
+                          title="Mở chat Messenger với khách"
+                        >
+                          <ExternalLink size={12} />
+                          <span>Mở Chat Messenger</span>
+                        </a>
+                      )}
+                    </div>
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>
+                        Link Messenger / Link Profile FB / Username khách:
+                      </label>
+                      <input
+                        type="text"
+                        style={{ fontSize: 16 }}
+                        placeholder="Dán link m.me, link chat inbox, link profile Facebook hoặc username..."
+                        value={form.customerChannelInfo || ''}
+                        onChange={e => set('customerChannelInfo', e.target.value)}
+                      />
+                      <span style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginTop: 4 }}>
+                        Tự động mở app Messenger trên điện thoại hoặc mở web chat trên máy tính.
+                      </span>
+                    </div>
+                  </div>
+                );
+              }
+
+              if (channelCfg.key === 'instagram') {
+                const igUrl = resolveInstagramUrl(form.customerChannelInfo);
+                const canSuggestFromCustomerName = !form.customerChannelInfo && form.customerName && (form.customerName.startsWith('@') || form.customerName.startsWith('_'));
+                return (
+                  <div
+                    className="channel-contact-box"
+                    style={{
+                      background: 'rgba(225, 48, 108, 0.04)',
+                      border: '1px solid rgba(225, 48, 108, 0.22)',
+                      borderRadius: 8,
+                      padding: '10px 12px',
+                      marginBottom: 14
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#e1306c', fontWeight: 600, fontSize: 13 }}>
+                        <Camera size={15} />
+                        <span>Kênh Instagram (Direct Message)</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        {canSuggestFromCustomerName && (
+                          <button
+                            type="button"
+                            onClick={() => set('customerChannelInfo', form.customerName)}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 4,
+                              background: 'rgba(225, 48, 108, 0.12)',
+                              color: '#e1306c',
+                              border: 'none',
+                              borderRadius: 6,
+                              padding: '3px 8px',
+                              fontSize: 11.5,
+                              cursor: 'pointer',
+                              fontWeight: 600
+                            }}
+                          >
+                            <Sparkles size={11} />
+                            <span>Lấy từ tên: {form.customerName}</span>
+                          </button>
+                        )}
+                        {igUrl && (
+                          <a
+                            href={igUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 5,
+                              background: '#e1306c',
+                              color: '#ffffff',
+                              padding: '4px 10px',
+                              borderRadius: 6,
+                              fontSize: 12,
+                              fontWeight: 600,
+                              textDecoration: 'none'
+                            }}
+                            title="Mở trang cá nhân Instagram"
+                          >
+                            <ExternalLink size={12} />
+                            <span>Mở Instagram</span>
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>
+                        Tài khoản Instagram (Handle/Link):
+                      </label>
+                      <input
+                        type="text"
+                        style={{ fontSize: 16 }}
+                        placeholder="VD: _amquynh hoặc @tiemhoa hoặc dán link profile Instagram..."
+                        value={form.customerChannelInfo || ''}
+                        onChange={e => set('customerChannelInfo', e.target.value)}
+                      />
+                    </div>
+                  </div>
+                );
+              }
+
+              if (channelCfg.key === 'thread') {
+                const threadUrl = resolveThreadUrl(form.customerChannelInfo);
+                return (
+                  <div
+                    className="channel-contact-box"
+                    style={{
+                      background: 'rgba(71, 85, 105, 0.04)',
+                      border: '1px solid rgba(71, 85, 105, 0.22)',
+                      borderRadius: 8,
+                      padding: '10px 12px',
+                      marginBottom: 14
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#475569', fontWeight: 600, fontSize: 13 }}>
+                        <AtSign size={15} />
+                        <span>Kênh Thread</span>
+                      </div>
+                      {threadUrl && (
+                        <a
+                          href={threadUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 5,
+                            background: '#475569',
+                            color: '#ffffff',
+                            padding: '4px 10px',
+                            borderRadius: 6,
+                            fontSize: 12,
+                            fontWeight: 600,
+                            textDecoration: 'none'
+                          }}
+                          title="Mở profile Threads"
+                        >
+                          <ExternalLink size={12} />
+                          <span>Mở Threads</span>
+                        </a>
+                      )}
+                    </div>
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>
+                        Tài khoản Threads (Handle/Link):
+                      </label>
+                      <input
+                        type="text"
+                        style={{ fontSize: 16 }}
+                        placeholder="VD: @username hoặc dán link profile Threads..."
+                        value={form.customerChannelInfo || ''}
+                        onChange={e => set('customerChannelInfo', e.target.value)}
+                      />
+                    </div>
+                  </div>
+                );
+              }
+
+              if (channelCfg.key === 'phone') {
+                return (
+                  <div
+                    className="channel-contact-box"
+                    style={{
+                      background: 'rgba(5, 150, 105, 0.04)',
+                      border: '1px solid rgba(5, 150, 105, 0.22)',
+                      borderRadius: 8,
+                      padding: '10px 12px',
+                      marginBottom: 14,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: 8
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#059669', fontWeight: 600, fontSize: 13 }}>
+                      <Phone size={15} />
+                      <span>Kênh Hotline / Điện thoại</span>
+                    </div>
+                    {cleanPhone ? (
+                      <a
+                        href={`tel:${cleanPhone}`}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 5,
+                          background: '#059669',
+                          color: '#ffffff',
+                          padding: '4px 10px',
+                          borderRadius: 6,
+                          fontSize: 12,
+                          fontWeight: 600,
+                          textDecoration: 'none'
+                        }}
+                      >
+                        <Phone size={12} />
+                        <span>Gọi Ngay ({form.phone})</span>
+                      </a>
+                    ) : (
+                      <span style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>
+                        Nhập SĐT khách ở ô trên để gọi trực tiếp
+                      </span>
+                    )}
+                  </div>
+                );
+              }
+
+              if (channelCfg.key === 'store') {
+                return (
+                  <div
+                    className="channel-contact-box"
+                    style={{
+                      background: 'rgba(124, 58, 237, 0.04)',
+                      border: '1px solid rgba(124, 58, 237, 0.22)',
+                      borderRadius: 8,
+                      padding: '10px 12px',
+                      marginBottom: 14,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      color: '#7c3aed',
+                      fontSize: 13,
+                      fontWeight: 500
+                    }}
+                  >
+                    <Store size={16} />
+                    <span>Khách ghé mua trực tiếp tại tiệm hoa</span>
+                  </div>
+                );
+              }
+
+              return null;
+            })()}
 
             {/* Row 2.5: Người tiếp nhận & xử lý đơn */}
             <div className="form-group" style={{ marginBottom: 14 }}>

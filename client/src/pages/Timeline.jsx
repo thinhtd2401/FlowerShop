@@ -13,77 +13,8 @@ import {
 import DatePicker from '../components/UI/DatePicker';
 import ConfirmDeliveryModal from '../components/UI/ConfirmDeliveryModal';
 import { formatMoney, getStatusInfo, removeVietnameseTones, parseDateToComparable } from '../utils/format';
-
-function getChannelConfig(channel) {
-  const norm = (channel || '').trim().toLowerCase();
-  if (norm.includes('zalo')) {
-    return {
-      label: 'Zalo',
-      color: '#0068ff',
-      bg: 'rgba(0, 104, 255, 0.09)',
-      border: 'rgba(0, 104, 255, 0.28)',
-      icon: MessageSquare
-    };
-  }
-  if (norm.includes('face') || norm.includes('fb')) {
-    return {
-      label: 'Facebook',
-      color: '#1877f2',
-      bg: 'rgba(24, 119, 242, 0.09)',
-      border: 'rgba(24, 119, 242, 0.28)',
-      icon: MessageCircle
-    };
-  }
-  if (norm.includes('insta') || norm.includes('ig')) {
-    return {
-      label: 'Instagram',
-      color: '#e1306c',
-      bg: 'rgba(225, 48, 108, 0.09)',
-      border: 'rgba(225, 48, 108, 0.28)',
-      icon: Camera
-    };
-  }
-  if (norm.includes('thread')) {
-    return {
-      label: 'Thread',
-      color: '#475569',
-      bg: 'rgba(71, 85, 105, 0.09)',
-      border: 'rgba(71, 85, 105, 0.28)',
-      icon: AtSign
-    };
-  }
-  if (norm.includes('thoại') || norm.includes('hotline') || norm.includes('phone') || norm.includes('gọi')) {
-    return {
-      label: 'Điện thoại',
-      color: '#059669',
-      bg: 'rgba(5, 150, 105, 0.09)',
-      border: 'rgba(5, 150, 105, 0.28)',
-      icon: Phone
-    };
-  }
-  if (norm.includes('tiệm') || norm.includes('cửa hàng') || norm.includes('trực tiếp')) {
-    return {
-      label: 'Tại tiệm',
-      color: '#7c3aed',
-      bg: 'rgba(124, 58, 237, 0.09)',
-      border: 'rgba(124, 58, 237, 0.28)',
-      icon: Store
-    };
-  }
-  return {
-    label: channel || 'Kênh khác',
-    color: '#64748b',
-    bg: 'rgba(100, 116, 139, 0.09)',
-    border: 'rgba(100, 116, 139, 0.28)',
-    icon: MessageSquare
-  };
-}
-
-function formatPhoneForZalo(phone) {
-  if (!phone) return '';
-  const digits = String(phone).replace(/\D/g, '');
-  return digits;
-}
+import { getChannelConfig, cleanPhoneNumber, getChannelAction } from '../utils/channelHelper';
+const formatPhoneForZalo = cleanPhoneNumber;
 
 function getTodayDMY() {
   const d = new Date();
@@ -288,7 +219,8 @@ export default function Timeline({ orders, onUpdateStatus, onOpenGallery, onEdit
           const addressMatch = removeVietnameseTones(o.deliveryAddress).includes(normalizedSearch);
           const channelMatch = removeVietnameseTones(o.channel).includes(normalizedSearch);
           const prodMatch = removeVietnameseTones(o.productName).includes(normalizedSearch);
-          if (!idMatch && !nameMatch && !phoneMatch && !recipientMatch && !addressMatch && !channelMatch && !prodMatch) {
+          const infoMatch = removeVietnameseTones(o.customerChannelInfo).includes(normalizedSearch);
+          if (!idMatch && !nameMatch && !phoneMatch && !recipientMatch && !addressMatch && !channelMatch && !prodMatch && !infoMatch) {
             return false;
           }
         }
@@ -864,9 +796,10 @@ export default function Timeline({ orders, onUpdateStatus, onOpenGallery, onEdit
 
                         {/* Customer Info & Contact Channels */}
                         {(() => {
-                          const channelCfg = getChannelConfig(o.channel);
-                          const ChannelIcon = channelCfg.icon;
-                          const cleanCustomerPhone = formatPhoneForZalo(o.phone);
+                          const action = getChannelAction(o);
+                          const ChannelIcon = action.cfg?.icon || MessageSquare;
+                          const cleanCustomerPhone = cleanPhoneNumber(o.phone);
+                          const isZaloChannel = (o.channel || '').toLowerCase().includes('zalo');
 
                           return (
                             <div className="timeline-customer-row">
@@ -875,25 +808,24 @@ export default function Timeline({ orders, onUpdateStatus, onOpenGallery, onEdit
                                   {o.customerName}
                                 </span>
 
-                                {/* Channel Badge - Chuyển profile Zalo nếu là kênh Zalo & có SĐT */}
+                                {/* Channel Badge - Clickable nếu có link action */}
                                 {o.channel && (() => {
-                                  const isZaloChannel = (o.channel || '').toLowerCase().includes('zalo');
-                                  if (isZaloChannel && cleanCustomerPhone) {
+                                  if (action.hasAction && action.url) {
                                     return (
                                       <a
-                                        href={`https://zalo.me/${cleanCustomerPhone}`}
+                                        href={action.url}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="timeline-channel-badge is-link zalo-profile-btn"
+                                        className="timeline-channel-badge is-link"
                                         style={{
-                                          color: channelCfg.color,
-                                          backgroundColor: channelCfg.bg,
-                                          borderColor: channelCfg.border
+                                          color: action.cfg.color,
+                                          backgroundColor: action.cfg.bg,
+                                          borderColor: action.cfg.border
                                         }}
-                                        title={`Bấm để mở trang cá nhân / chat Zalo của khách hàng (${o.phone})`}
+                                        title={action.tooltip}
                                       >
                                         <ChannelIcon size={11} />
-                                        <span>{channelCfg.label}</span>
+                                        <span>{action.cfg.label}</span>
                                         <ExternalLink size={9} className="channel-badge-ext-icon" />
                                       </a>
                                     );
@@ -903,14 +835,14 @@ export default function Timeline({ orders, onUpdateStatus, onOpenGallery, onEdit
                                     <span
                                       className="timeline-channel-badge"
                                       style={{
-                                        color: channelCfg.color,
-                                        backgroundColor: channelCfg.bg,
-                                        borderColor: channelCfg.border
+                                        color: action.cfg?.color || '#64748b',
+                                        backgroundColor: action.cfg?.bg || 'rgba(100, 116, 139, 0.09)',
+                                        borderColor: action.cfg?.border || 'rgba(100, 116, 139, 0.28)'
                                       }}
-                                      title={isZaloChannel ? 'Đơn Zalo chưa có số điện thoại để mở profile' : `Kênh đặt hàng: ${o.channel}`}
+                                      title={action.tooltip || `Kênh đặt hàng: ${o.channel}`}
                                     >
                                       <ChannelIcon size={11} />
-                                      <span>{channelCfg.label}</span>
+                                      <span>{action.cfg?.label || o.channel}</span>
                                     </span>
                                   );
                                 })()}
@@ -925,8 +857,8 @@ export default function Timeline({ orders, onUpdateStatus, onOpenGallery, onEdit
                               </div>
 
                               {/* Quick Contact Actions for Customer */}
-                              {o.phone && (
-                                <div className="timeline-contact-actions">
+                              <div className="timeline-contact-actions">
+                                {o.phone && (
                                   <a
                                     href={`tel:${o.phone}`}
                                     className="timeline-contact-action tel"
@@ -935,20 +867,37 @@ export default function Timeline({ orders, onUpdateStatus, onOpenGallery, onEdit
                                     <Phone size={11} />
                                     <span>{o.phone}</span>
                                   </a>
-                                  {cleanCustomerPhone && (
-                                    <a
-                                      href={`https://zalo.me/${cleanCustomerPhone}`}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="timeline-contact-action zalo"
-                                      title="Mở chat Zalo với khách đặt để gửi ảnh hoa đã cắm hoặc trao đổi"
-                                    >
-                                      <MessageSquare size={11} />
-                                      <span>Zalo</span>
-                                    </a>
-                                  )}
-                                </div>
-                              )}
+                                )}
+                                {action.hasAction && action.url && action.type !== 'phone' && (
+                                  <a
+                                    href={action.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="timeline-contact-action"
+                                    style={{
+                                      color: action.cfg.color,
+                                      borderColor: action.cfg.border,
+                                      backgroundColor: action.cfg.bg
+                                    }}
+                                    title={action.tooltip}
+                                  >
+                                    <ChannelIcon size={11} />
+                                    <span>{action.label}</span>
+                                  </a>
+                                )}
+                                {cleanCustomerPhone && !isZaloChannel && (
+                                  <a
+                                    href={`https://zalo.me/${cleanCustomerPhone}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="timeline-contact-action zalo"
+                                    title="Mở chat Zalo với khách đặt"
+                                  >
+                                    <MessageSquare size={11} />
+                                    <span>Zalo</span>
+                                  </a>
+                                )}
+                              </div>
                             </div>
                           );
                         })()}

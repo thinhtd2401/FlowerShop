@@ -38,6 +38,7 @@ db.exec(`
     delivery_type TEXT DEFAULT 'Khách qua lấy',
     status TEXT DEFAULT 'pending',
     notes TEXT DEFAULT '',
+    customer_channel_info TEXT DEFAULT '',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
@@ -103,6 +104,9 @@ if (!orderColumns.includes('assigned_user_id')) {
 }
 if (!orderColumns.includes('assigned_user_name')) {
   db.exec("ALTER TABLE orders ADD COLUMN assigned_user_name TEXT DEFAULT ''");
+}
+if (!orderColumns.includes('customer_channel_info')) {
+  db.exec("ALTER TABLE orders ADD COLUMN customer_channel_info TEXT DEFAULT ''");
 }
 
 // Safe migrations for new fields in users table

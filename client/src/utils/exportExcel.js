@@ -91,6 +91,7 @@ export function exportToExcel(orders = [], expenses = []) {
     'Khách Hàng',
     'Số Điện Thoại',
     'Kênh Tiếp Nhận',
+    'Tài Khoản / Link Kênh',
     'Mẫu Hoa / Sản Phẩm',
     'Số Lượng (Bó)',
     'Đơn Giá (VNĐ)',
@@ -116,6 +117,7 @@ export function exportToExcel(orders = [], expenses = []) {
       o.customerName || '',
       o.phone || '',
       o.channel || '',
+      o.customerChannelInfo || '',
       o.productName || '',
     parseInt(o.quantity, 10) || 1,
     parseInt(o.unitPrice, 10) || 0,
@@ -139,6 +141,7 @@ export function exportToExcel(orders = [], expenses = []) {
     { wch: 20 }, // Khách Hàng
     { wch: 14 }, // Số Điện Thoại
     { wch: 15 }, // Kênh
+    { wch: 22 }, // Tài Khoản / Link Kênh
     { wch: 28 }, // Mẫu Hoa
     { wch: 14 }, // Số Lượng
     { wch: 14 }, // Đơn Giá

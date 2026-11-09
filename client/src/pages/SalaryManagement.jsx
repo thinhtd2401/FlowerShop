@@ -48,21 +48,19 @@ export default function SalaryManagement({ showToast }) {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [quickDate, setQuickDate] = useState('all'); // 'all' | 'today' | 'last7' | 'thisMonth'
-  const [dateField, setDateField] = useState('order_date'); // 'order_date' | 'delivery_date'
   const [searchUser, setSearchUser] = useState('');
 
   // Modals state
   const [configModalOpen, setConfigModalOpen] = useState(false);
   const [selectedDayData, setSelectedDayData] = useState(null);
 
-  // Fetch overview data
+  // Fetch overview data (cố định căn cứ theo ngày giao hàng)
   const fetchSalaryOverview = useCallback(async () => {
     try {
       setLoading(true);
       const params = {
         from: startDate || undefined,
-        to: endDate || undefined,
-        dateField
+        to: endDate || undefined
       };
       const res = await salaryApi.getOverview(params);
       setData(res);
@@ -71,7 +69,7 @@ export default function SalaryManagement({ showToast }) {
     } finally {
       setLoading(false);
     }
-  }, [startDate, endDate, dateField, showToast]);
+  }, [startDate, endDate, showToast]);
 
   useEffect(() => {
     fetchSalaryOverview();
@@ -116,7 +114,7 @@ export default function SalaryManagement({ showToast }) {
   return (
     <div className="orders-container salary-management-page">
       {/* Page Header */}
-      <div className="orders-header">
+      <div className="orders-header salary-header-wrapper">
         <div className="orders-title-section">
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div className="header-icon-box" style={{ background: 'var(--primary-subtle)', color: 'var(--primary)', padding: 8, borderRadius: 10 }}>
@@ -127,7 +125,7 @@ export default function SalaryManagement({ showToast }) {
                 Quản Lý &amp; Bảng Lương
               </h2>
               <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--text-muted)' }}>
-                Tính lương chia theo lợi nhuận ngày, điều chỉnh tỷ lệ và thống kê đơn đã xử lý
+                Tính lương chia theo lợi nhuận theo ngày giao hàng, điều chỉnh tỷ lệ và thống kê đơn đã xử lý
               </p>
             </div>
           </div>
@@ -147,46 +145,48 @@ export default function SalaryManagement({ showToast }) {
         </div>
       </div>
 
-      {/* Filter Toolbar */}
-      <div className="orders-filter-bar" style={{ gap: 14 }}>
-        <div className="filter-date-controls" style={{ flexWrap: 'wrap', gap: 12 }}>
+      {/* Filter Toolbar - Tinh gọn, chỉ lọc theo Ngày Giao Hàng */}
+      <div className="salary-filter-bar">
+        <div className="salary-filter-row">
           {/* Quick Date Pills */}
-          <div className="quick-date-pills">
-            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', alignSelf: 'center' }}>
-              Khoảng ngày:
+          <div className="salary-quick-pills-wrap">
+            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', flexShrink: 0 }}>
+              Khoảng ngày giao:
             </span>
-            <button
-              type="button"
-              className={`date-pill ${quickDate === 'all' && !startDate && !endDate ? 'active' : ''}`}
-              onClick={() => handleQuickDateSelect('all')}
-            >
-              Toàn bộ
-            </button>
-            <button
-              type="button"
-              className={`date-pill ${quickDate === 'today' ? 'active' : ''}`}
-              onClick={() => handleQuickDateSelect('today')}
-            >
-              Hôm nay
-            </button>
-            <button
-              type="button"
-              className={`date-pill ${quickDate === 'last7' ? 'active' : ''}`}
-              onClick={() => handleQuickDateSelect('last7')}
-            >
-              7 ngày qua
-            </button>
-            <button
-              type="button"
-              className={`date-pill ${quickDate === 'thisMonth' ? 'active' : ''}`}
-              onClick={() => handleQuickDateSelect('thisMonth')}
-            >
-              Tháng này
-            </button>
+            <div className="quick-date-pills" style={{ display: 'flex', gap: 6, flexWrap: 'nowrap' }}>
+              <button
+                type="button"
+                className={`date-pill ${quickDate === 'all' && !startDate && !endDate ? 'active' : ''}`}
+                onClick={() => handleQuickDateSelect('all')}
+              >
+                Toàn bộ
+              </button>
+              <button
+                type="button"
+                className={`date-pill ${quickDate === 'today' ? 'active' : ''}`}
+                onClick={() => handleQuickDateSelect('today')}
+              >
+                Hôm nay
+              </button>
+              <button
+                type="button"
+                className={`date-pill ${quickDate === 'last7' ? 'active' : ''}`}
+                onClick={() => handleQuickDateSelect('last7')}
+              >
+                7 ngày qua
+              </button>
+              <button
+                type="button"
+                className={`date-pill ${quickDate === 'thisMonth' ? 'active' : ''}`}
+                onClick={() => handleQuickDateSelect('thisMonth')}
+              >
+                Tháng này
+              </button>
+            </div>
           </div>
 
           {/* Date Range Picker */}
-          <div className="date-range-picker" title="Lọc dữ liệu theo khoảng ngày">
+          <div className="date-range-picker" title="Lọc dữ liệu theo khoảng ngày giao hàng">
             <DatePicker
               label="Từ:"
               value={startDate}
@@ -224,51 +224,12 @@ export default function SalaryManagement({ showToast }) {
               </button>
             )}
           </div>
-
-          {/* Base Date Selector Toggle */}
-          <div style={{ display: 'inline-flex', alignItems: 'center', background: 'var(--bg-app)', padding: 3, borderRadius: 8, border: '1px solid var(--border-color)', gap: 4 }}>
-            <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--text-muted)', padding: '0 6px' }}>Căn cứ theo:</span>
-            <button
-              type="button"
-              onClick={() => setDateField('order_date')}
-              style={{
-                fontSize: 12,
-                fontWeight: dateField === 'order_date' ? 700 : 500,
-                background: dateField === 'order_date' ? 'var(--bg-surface)' : 'transparent',
-                color: dateField === 'order_date' ? 'var(--primary)' : 'var(--text-muted)',
-                border: 'none',
-                borderRadius: 6,
-                padding: '4px 10px',
-                cursor: 'pointer',
-                boxShadow: dateField === 'order_date' ? 'var(--shadow-sm)' : 'none'
-              }}
-            >
-              Ngày đặt đơn
-            </button>
-            <button
-              type="button"
-              onClick={() => setDateField('delivery_date')}
-              style={{
-                fontSize: 12,
-                fontWeight: dateField === 'delivery_date' ? 700 : 500,
-                background: dateField === 'delivery_date' ? 'var(--bg-surface)' : 'transparent',
-                color: dateField === 'delivery_date' ? 'var(--primary)' : 'var(--text-muted)',
-                border: 'none',
-                borderRadius: 6,
-                padding: '4px 10px',
-                cursor: 'pointer',
-                boxShadow: dateField === 'delivery_date' ? 'var(--shadow-sm)' : 'none'
-              }}
-            >
-              Ngày giao hàng
-            </button>
-          </div>
         </div>
       </div>
 
       {/* KPI Cards Strip */}
-      <div className="orders-summary-bar">
-        <div className="summary-stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
+      <div className="orders-summary-bar" style={{ padding: 0, background: 'transparent', border: 'none', boxShadow: 'none' }}>
+        <div className="summary-stats-grid salary-kpi-grid">
           {/* Card 1: Tổng lợi nhuận */}
           <div className="summary-stat-chip">
             <div className="summary-stat-icon orders" style={{ background: 'var(--primary-subtle)', color: 'var(--primary)' }}>
@@ -324,8 +285,8 @@ export default function SalaryManagement({ showToast }) {
       </div>
 
       {/* SECTION 1: TỔNG QUAN LƯƠNG & HIỆU SUẤT TỪNG NGƯỜI */}
-      <div style={{ marginTop: 20 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+      <div>
+        <div className="salary-section-header">
           <div>
             <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
               <UserCheck size={18} color="var(--primary)" />
@@ -337,7 +298,7 @@ export default function SalaryManagement({ showToast }) {
           </div>
 
           {/* Search box */}
-          <div style={{ position: 'relative', width: 220 }}>
+          <div className="salary-search-box">
             <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
             <input
               type="text"
@@ -346,7 +307,7 @@ export default function SalaryManagement({ showToast }) {
               onChange={e => setSearchUser(e.target.value)}
               style={{
                 width: '100%',
-                padding: '6px 10px 6px 30px',
+                padding: '7px 10px 7px 30px',
                 borderRadius: 8,
                 border: '1px solid var(--border-color)',
                 fontSize: 13,
@@ -357,7 +318,7 @@ export default function SalaryManagement({ showToast }) {
         </div>
 
         {/* User Cards Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 14 }}>
+        <div className="salary-user-grid">
           {filteredUserSummaries.map(user => {
             return (
               <div
@@ -369,7 +330,10 @@ export default function SalaryManagement({ showToast }) {
                   padding: 16,
                   boxShadow: 'var(--shadow-sm)',
                   position: 'relative',
-                  overflow: 'hidden'
+                  overflow: 'hidden',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between'
                 }}
               >
                 {/* User Header */}
@@ -480,8 +444,8 @@ export default function SalaryManagement({ showToast }) {
       </div>
 
       {/* SECTION 2: BẢNG NHẬT KÝ THEO NGÀY & NÚT ĐIỀU CHỈNH TỶ LỆ */}
-      <div style={{ marginTop: 28 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+      <div>
+        <div className="salary-section-header">
           <div>
             <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
               <Calendar size={18} color="var(--primary)" />
@@ -493,20 +457,20 @@ export default function SalaryManagement({ showToast }) {
           </div>
         </div>
 
-        {/* Daily Breakdown Table for Desktop */}
-        <div className="orders-table-wrapper desktop-only-table" style={{ marginTop: 8 }}>
-          <table className="orders-table">
+        {/* Daily Breakdown Table for Desktop & Tablet with Horizontal Scroll */}
+        <div className="table-responsive salary-table-responsive desktop-only-table">
+          <table className="data-table salary-table">
             <thead>
               <tr>
-                <th style={{ width: 45, textAlign: 'center' }}>STT</th>
-                <th>Ngày</th>
-                <th style={{ textAlign: 'center' }}>Số Đơn</th>
+                <th style={{ width: 40, textAlign: 'center' }}>STT</th>
+                <th style={{ whiteSpace: 'nowrap' }}>Ngày Giao Hàng</th>
+                <th style={{ textAlign: 'center', width: 75 }}>Số Đơn</th>
                 <th>Doanh Thu</th>
                 <th>Chi Phí</th>
                 <th>Lợi Nhuận Ngày</th>
                 <th>Trạng Thái Tỷ Lệ</th>
                 <th>Phân Bổ Lương Chi Tiết</th>
-                <th style={{ textAlign: 'center', width: 110 }}>Thao Tác</th>
+                <th style={{ textAlign: 'center', width: 95 }}>Thao Tác</th>
               </tr>
             </thead>
             <tbody>
@@ -578,19 +542,11 @@ export default function SalaryManagement({ showToast }) {
                         )}
                       </td>
                       <td>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                        <div className="salary-alloc-list">
                           {day.allocations
                             .filter(a => a.isParticipating)
                             .map(a => (
-                              <div
-                                key={a.userId}
-                                style={{
-                                  fontSize: 11.5,
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: 6
-                                }}
-                              >
+                              <div key={a.userId} className="salary-alloc-item">
                                 <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>{a.userName}:</span>
                                 <span style={{ color: 'var(--primary)', fontWeight: 700 }}>{a.percentage}%</span>
                                 <span style={{ color: 'var(--text-muted)' }}>({formatMoney(a.salary)})</span>
@@ -650,6 +606,7 @@ export default function SalaryManagement({ showToast }) {
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: 0.3 }}>Ngày giao hàng</div>
                   <span style={{ fontWeight: 800, fontSize: 15, color: 'var(--text-main)' }}>{day.date}</span>
                   <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 2 }}>{day.orderCount} đơn hàng</div>
                 </div>

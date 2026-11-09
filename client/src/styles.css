@@ -5818,3 +5818,219 @@ svg.icon-svg {
     font-size: 16px !important;
   }
 }
+
+/* ========================================================
+   SALARY MANAGEMENT - RESPONSIVE & TABLET OPTIMIZATIONS
+   ======================================================== */
+
+.salary-management-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Header & Actions */
+.salary-header-wrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* Filter Toolbar */
+.salary-filter-bar {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 12px 16px;
+  box-shadow: var(--shadow-sm);
+  box-sizing: border-box;
+}
+
+.salary-filter-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.salary-quick-pills-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* KPI Summary Grid */
+.salary-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Section Headers */
+.salary-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.salary-search-box {
+  position: relative;
+  width: 240px;
+  min-width: 180px;
+}
+
+/* Lưới Thẻ Nhân Sự */
+.salary-user-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Bảng Dữ Liệu Tính Lương & Cuộn Ngang */
+.salary-table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  background-color: var(--bg-surface);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+  scrollbar-width: thin;
+}
+
+.salary-table-responsive::-webkit-scrollbar {
+  height: 6px;
+}
+
+.salary-table-responsive::-webkit-scrollbar-track {
+  background: var(--bg-app);
+}
+
+.salary-table-responsive::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 3px;
+}
+
+.salary-table {
+  width: 100%;
+  min-width: 820px;
+  border-collapse: collapse;
+}
+
+.salary-table th {
+  background-color: #fbf9f6;
+  padding: 12px 14px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
+}
+
+[data-theme="dark"] .salary-table th {
+  background-color: var(--bg-muted);
+}
+
+.salary-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border-light);
+  color: var(--text-main);
+  vertical-align: middle;
+  font-size: 13px;
+}
+
+.salary-alloc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.salary-alloc-item {
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+/* RESPONSIVE TABLE CHO LAPTOP NHỎ & TABLET (<= 1280px) */
+@media (max-width: 1280px) {
+  .data-table th,
+  .salary-table th {
+    padding: 10px 10px !important;
+    font-size: 11.5px !important;
+  }
+
+  .data-table td,
+  .salary-table td {
+    padding: 10px 10px !important;
+    font-size: 12.5px !important;
+  }
+
+  .salary-table {
+    min-width: 820px !important;
+  }
+
+  .salary-alloc-item {
+    font-size: 11.5px !important;
+    gap: 4px !important;
+  }
+}
+
+/* TABLET RESPONSIVE (<= 1024px) */
+@media (max-width: 1024px) {
+  .data-table th,
+  .salary-table th {
+    padding: 8px 8px !important;
+    font-size: 11px !important;
+  }
+
+  .data-table td,
+  .salary-table td {
+    padding: 8px 8px !important;
+    font-size: 12px !important;
+  }
+
+  .salary-kpi-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
+  }
+
+  .salary-filter-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+
+  .salary-filter-row .date-range-picker {
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+  }
+
+  .salary-user-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
+  }
+
+  .salary-table-responsive {
+    margin-top: 8px;
+    display: block !important;
+  }
+}
