@@ -197,20 +197,28 @@ router.get('/overview', (req, res) => {
       configByDate[c.date].push(c);
     });
 
-    // Tổng lương lũy kế của từng người trong kỳ
-    const userTotalSalaries = {};
+    // Tổng tiền chia theo tỷ lệ thực nhận của từng người trong kỳ
+    const userTotalReceivedShare = {};
     allUsers.forEach(u => {
-      userTotalSalaries[u.id] = 0;
+      userTotalReceivedShare[u.id] = 0;
     });
 
-    // Xử lý tính toán cho từng ngày
+    // Xử lý tính toán cho từng ngày: Lấy TIỀN THỰC NHẬN để chia tỷ lệ
     const dailyBreakdown = sortedDates.map(dateStr => {
       const dayOrders = allOrders.filter(o => o[filterField] === dateStr);
       const dayExpenses = allExpenses.filter(e => e.date === dateStr);
 
       const dayRevenue = dayOrders.reduce((sum, o) => sum + (o.total_amount || 0), 0);
+      
+      // Tiền thực nhận trong ngày (100% đơn completed + cọc của đơn pending/ready)
+      const dayActualReceived = dayOrders.reduce((sum, o) => {
+        if (o.status === 'completed') return sum + (o.total_amount || 0);
+        if (o.status === 'pending' || o.status === 'ready') return sum + (o.deposit_amount || 0);
+        return sum;
+      }, 0);
+
       const dayCost = dayExpenses.reduce((sum, e) => sum + (e.total_cost || 0), 0);
-      const dayProfit = dayRevenue - dayCost;
+      const dayProfit = dayActualReceived - dayCost;
 
       const customRows = configByDate[dateStr] || [];
       const isCustom = customRows.length > 0;
@@ -225,11 +233,11 @@ router.get('/overview', (req, res) => {
           const percentage = cfg ? Number(cfg.percentage) || 0 : 0;
           const notes = cfg ? (cfg.notes || '') : '';
 
-          // Lương tính theo tỷ lệ
-          const salary = isParticipating ? Math.round(dayProfit * (percentage / 100)) : 0;
+          // Lương tính theo tỷ lệ TIỀN THỰC NHẬN trong ngày
+          const receivedShare = isParticipating ? Math.round(dayActualReceived * (percentage / 100)) : 0;
 
           if (isParticipating) {
-            userTotalSalaries[user.id] = (userTotalSalaries[user.id] || 0) + salary;
+            userTotalReceivedShare[user.id] = (userTotalReceivedShare[user.id] || 0) + receivedShare;
           }
 
           return {
@@ -239,7 +247,8 @@ router.get('/overview', (req, res) => {
             role: user.role,
             isParticipating,
             percentage,
-            salary,
+            receivedShare,
+            salary: receivedShare,
             notes
           };
         });
@@ -248,13 +257,21 @@ router.get('/overview', (req, res) => {
         const defaultEligibleCount = eligibleUsers.length;
         const equalPercentage = defaultEligibleCount > 0 ? Number((100 / defaultEligibleCount).toFixed(2)) : 0;
 
+        let allocatedSoFar = 0;
         allocations = allUsers.map(user => {
           const isParticipating = user.isSalaryEligible;
-          const percentage = isParticipating ? equalPercentage : 0;
-          const salary = isParticipating ? Math.round(dayProfit * (percentage / 100)) : 0;
+          const userIdx = eligibleUsers.findIndex(u => u.id === user.id);
+          let receivedShare = 0;
 
-          if (isParticipating) {
-            userTotalSalaries[user.id] = (userTotalSalaries[user.id] || 0) + salary;
+          if (isParticipating && defaultEligibleCount > 0) {
+            if (userIdx === defaultEligibleCount - 1) {
+              // Phân bổ phần còn lại để bảo đảm tổng đúng 100% tiền thực nhận ngày đó
+              receivedShare = Math.max(0, dayActualReceived - allocatedSoFar);
+            } else {
+              receivedShare = Math.round(dayActualReceived / defaultEligibleCount);
+              allocatedSoFar += receivedShare;
+            }
+            userTotalReceivedShare[user.id] = (userTotalReceivedShare[user.id] || 0) + receivedShare;
           }
 
           return {
@@ -263,8 +280,9 @@ router.get('/overview', (req, res) => {
             avatar: user.avatar,
             role: user.role,
             isParticipating,
-            percentage,
-            salary,
+            percentage: isParticipating ? equalPercentage : 0,
+            receivedShare,
+            salary: receivedShare,
             notes: ''
           };
         });
@@ -274,6 +292,7 @@ router.get('/overview', (req, res) => {
         date: dateStr,
         orderCount: dayOrders.length,
         revenue: dayRevenue,
+        actualReceived: dayActualReceived,
         cost: dayCost,
         profit: dayProfit,
         isCustom,
@@ -281,10 +300,37 @@ router.get('/overview', (req, res) => {
       };
     });
 
-    // Tổng quan theo từng người
+    // KPI tổng quan cả kỳ
+    const totalRevenue = allOrders.reduce((sum, o) => sum + (o.total_amount || 0), 0);
+    const totalActualReceived = allOrders.reduce((sum, o) => {
+      if (o.status === 'completed') return sum + (o.total_amount || 0);
+      if (o.status === 'pending' || o.status === 'ready') return sum + (o.deposit_amount || 0);
+      return sum;
+    }, 0);
+    const totalCost = allExpenses.reduce((sum, e) => sum + (e.total_cost || 0), 0);
+    const totalProfit = totalActualReceived - totalCost;
+
+    // PHƯƠNG ÁN B: VỐN VÀ CHI PHÍ ĐƯỢC CHIA ĐỀU VÀ TRỪ ĐI CHO TỪNG NGƯỜI THAM GIA TÍNH LƯƠNG
+    const eligibleCount = eligibleUsers.length;
+    const costPerEligibleUser = eligibleCount > 0 ? Math.round(totalCost / eligibleCount) : 0;
+    let costDeductedSoFar = 0;
+    const userCostDeductions = {};
+    eligibleUsers.forEach((u, idx) => {
+      if (idx === eligibleCount - 1) {
+        userCostDeductions[u.id] = Math.max(0, totalCost - costDeductedSoFar);
+      } else {
+        const share = Math.round(totalCost / eligibleCount);
+        costDeductedSoFar += share;
+        userCostDeductions[u.id] = share;
+      }
+    });
+
+    // Tổng quan theo từng người (Bóc tách rõ: Tiền chia thực nhận, Vốn & Chi phí trừ, Thực lĩnh)
     const userSummaries = allUsers.map(user => {
       const stats = userOrderStats[user.id] || { orderCount: 0, orderTotalAmount: 0 };
-      const totalSalary = userTotalSalaries[user.id] || 0;
+      const totalReceivedShare = userTotalReceivedShare[user.id] || 0;
+      const totalCostDeduction = user.isSalaryEligible ? (userCostDeductions[user.id] || 0) : 0;
+      const totalSalary = totalReceivedShare - totalCostDeduction;
 
       return {
         id: user.id,
@@ -295,22 +341,24 @@ router.get('/overview', (req, res) => {
         isSalaryEligible: user.isSalaryEligible,
         orderCount: stats.orderCount,
         orderTotalAmount: stats.orderTotalAmount,
+        totalReceivedShare,
+        totalCostDeduction,
         totalSalary
       };
     });
 
-    // KPI tổng quan cả kỳ
-    const totalRevenue = allOrders.reduce((sum, o) => sum + (o.total_amount || 0), 0);
-    const totalCost = allExpenses.reduce((sum, e) => sum + (e.total_cost || 0), 0);
-    const totalProfit = totalRevenue - totalCost;
-    const totalSalaryAllocated = Object.values(userTotalSalaries).reduce((sum, s) => sum + s, 0);
+    const totalSalaryAllocated = userSummaries.reduce((sum, u) => sum + u.totalSalary, 0);
+    const totalGrossSalary = userSummaries.reduce((sum, u) => sum + u.totalReceivedShare, 0);
 
     res.json({
       kpis: {
         totalRevenue,
+        totalActualReceived,
         totalCost,
         totalProfit,
+        totalGrossSalary,
         totalSalaryAllocated,
+        costPerEligibleUser,
         totalOrdersCount: allOrders.length,
         activeParticipantsCount: eligibleUsers.length
       },

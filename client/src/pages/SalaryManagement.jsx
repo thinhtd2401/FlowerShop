@@ -26,7 +26,8 @@ import {
   Clock,
   Sparkles,
   Info,
-  Loader2
+  Loader2,
+  Tag
 } from 'lucide-react';
 import { salaryApi } from '../api';
 import { formatMoney } from '../utils/format';
@@ -101,12 +102,13 @@ export default function SalaryManagement({ showToast }) {
     }
   };
 
-  // Filtered User Summaries
+  // Filtered User Summaries - CHỈ HIỂN THỊ NHÂN SỰ ĐƯỢC TÍNH LƯƠNG
   const filteredUserSummaries = useMemo(() => {
     if (!data?.userSummaries) return [];
-    if (!searchUser.trim()) return data.userSummaries;
+    const eligibleOnly = data.userSummaries.filter(u => u.isSalaryEligible);
+    if (!searchUser.trim()) return eligibleOnly;
     const q = searchUser.trim().toLowerCase();
-    return data.userSummaries.filter(
+    return eligibleOnly.filter(
       u => u.name?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q)
     );
   }, [data?.userSummaries, searchUser]);
@@ -125,7 +127,7 @@ export default function SalaryManagement({ showToast }) {
                 Quản Lý &amp; Bảng Lương
               </h2>
               <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--text-muted)' }}>
-                Tính lương chia theo lợi nhuận theo ngày giao hàng, điều chỉnh tỷ lệ và thống kê đơn đã xử lý
+                Tính lương theo tỷ lệ tiền thực nhận theo ngày giao hàng, trừ vốn &amp; chi phí chia đều cho từng người
               </p>
             </div>
           </div>
@@ -230,54 +232,41 @@ export default function SalaryManagement({ showToast }) {
       {/* KPI Cards Strip */}
       <div className="orders-summary-bar" style={{ padding: 0, background: 'transparent', border: 'none', boxShadow: 'none' }}>
         <div className="summary-stats-grid salary-kpi-grid">
-          {/* Card 1: Tổng lợi nhuận */}
+          {/* Card 1: Tổng tiền thực nhận (căn cứ chia tỷ lệ) */}
           <div className="summary-stat-chip">
-            <div className="summary-stat-icon orders" style={{ background: 'var(--primary-subtle)', color: 'var(--primary)' }}>
+            <div className="summary-stat-icon paid" style={{ background: 'var(--primary-subtle)', color: 'var(--primary)' }}>
+              <Wallet size={18} />
+            </div>
+            <div className="summary-stat-info">
+              <span className="summary-stat-label">Tiền Thực Nhận (Chia %)</span>
+              <span className="summary-stat-value" style={{ color: 'var(--primary)' }}>
+                {loading ? '...' : formatMoney(data?.kpis?.totalActualReceived || 0)}
+              </span>
+            </div>
+          </div>
+
+          {/* Card 2: Vốn & Chi Phí (chia đều) */}
+          <div className="summary-stat-chip">
+            <div className="summary-stat-icon" style={{ background: '#fff7ed', color: '#c2410c' }}>
+              <Tag size={18} />
+            </div>
+            <div className="summary-stat-info">
+              <span className="summary-stat-label">Vốn &amp; Chi Phí (Chia Đều)</span>
+              <span className="summary-stat-value" style={{ color: '#c2410c' }}>
+                {loading ? '...' : formatMoney(data?.kpis?.totalCost || 0)}
+              </span>
+            </div>
+          </div>
+
+          {/* Card 3: Tổng lợi nhuận ròng */}
+          <div className="summary-stat-chip">
+            <div className="summary-stat-icon orders" style={{ background: 'var(--status-ready-bg)', color: 'var(--status-ready-text)' }}>
               <TrendingUp size={18} />
             </div>
             <div className="summary-stat-info">
-              <span className="summary-stat-label">Tổng Lợi Nhuận Kỳ</span>
+              <span className="summary-stat-label">Tổng Lợi Nhuận Ròng</span>
               <span className="summary-stat-value" style={{ color: (data?.kpis?.totalProfit || 0) >= 0 ? 'var(--status-completed-text)' : '#e11d48' }}>
                 {loading ? '...' : formatMoney(data?.kpis?.totalProfit || 0)}
-              </span>
-            </div>
-          </div>
-
-          {/* Card 2: Tổng quỹ lương */}
-          <div className="summary-stat-chip">
-            <div className="summary-stat-icon paid" style={{ background: 'var(--accent-gold-light)', color: 'var(--accent-gold)' }}>
-              <DollarSign size={18} />
-            </div>
-            <div className="summary-stat-info">
-              <span className="summary-stat-label">Quỹ Lương Đã Chia</span>
-              <span className="summary-stat-value">
-                {loading ? '...' : formatMoney(data?.kpis?.totalSalaryAllocated || 0)}
-              </span>
-            </div>
-          </div>
-
-          {/* Card 3: Tổng đơn tiếp nhận */}
-          <div className="summary-stat-chip">
-            <div className="summary-stat-icon remain" style={{ background: 'var(--status-ready-bg)', color: 'var(--status-ready-text)' }}>
-              <ShoppingBag size={18} />
-            </div>
-            <div className="summary-stat-info">
-              <span className="summary-stat-label">Tổng Đơn Hàng</span>
-              <span className="summary-stat-value">
-                {loading ? '...' : `${data?.kpis?.totalOrdersCount || 0} đơn`}
-              </span>
-            </div>
-          </div>
-
-          {/* Card 4: Nhân sự tính lương */}
-          <div className="summary-stat-chip">
-            <div className="summary-stat-icon" style={{ background: 'var(--secondary-light)', color: 'var(--secondary)' }}>
-              <Users size={18} />
-            </div>
-            <div className="summary-stat-info">
-              <span className="summary-stat-label">Nhân Sự Tính Lương</span>
-              <span className="summary-stat-value">
-                {loading ? '...' : `${data?.kpis?.activeParticipantsCount || 0} người`}
               </span>
             </div>
           </div>
@@ -290,10 +279,10 @@ export default function SalaryManagement({ showToast }) {
           <div>
             <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
               <UserCheck size={18} color="var(--primary)" />
-              <span>Tổng Quan Lương &amp; Đơn Hàng Theo Từng Người</span>
+              <span>Tổng Quan Lương &amp; Bóc Tách Chi Phí Từng Người</span>
             </h3>
             <p style={{ margin: '2px 0 0', fontSize: 12.5, color: 'var(--text-muted)' }}>
-              Số đơn tiếp nhận, tổng doanh số phụ trách và lương tích lũy trong kỳ lọc
+              Tiền chia từ thực nhận các ngày trừ vốn &amp; chi phí chia đều để ra lương thực lĩnh
             </p>
           </div>
 
@@ -333,7 +322,8 @@ export default function SalaryManagement({ showToast }) {
                   overflow: 'hidden',
                   display: 'flex',
                   flexDirection: 'column',
-                  justifyContent: 'space-between'
+                  justifyContent: 'space-between',
+                  gap: 12
                 }}
               >
                 {/* User Header */}
@@ -395,45 +385,75 @@ export default function SalaryManagement({ showToast }) {
                   </div>
                 </div>
 
-                {/* Performance & Salary Stats */}
+                {/* Performance & Salary Stats - 4 Hàng Bóc Tách Rõ Ràng */}
                 <div
                   style={{
-                    display: 'grid',
-                    gridTemplateColumns: '1fr 1fr',
-                    gap: 10,
-                    marginTop: 14,
-                    paddingTop: 12,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 6,
+                    paddingTop: 10,
                     borderTop: '1px dashed var(--border-light)'
                   }}
                 >
-                  <div style={{ background: 'var(--bg-app)', padding: 10, borderRadius: 8 }}>
-                    <div style={{ fontSize: 11.5, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <ShoppingBag size={12} /> Đơn Tiếp Nhận
+                  {/* Hàng 1: Đơn tiếp nhận & Doanh số */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-app)', padding: '6px 10px', borderRadius: 8, fontSize: 12 }}>
+                    <div style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <ShoppingBag size={12} /> <span>Đơn tiếp nhận:</span>
                     </div>
-                    <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-main)', marginTop: 2 }}>
-                      {user.orderCount} <span style={{ fontSize: 12, fontWeight: 500 }}>đơn</span>
-                    </div>
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
-                      {formatMoney(user.orderTotalAmount)}
+                    <div style={{ fontWeight: 600, color: 'var(--text-main)' }}>
+                      {user.orderCount} đơn <span style={{ color: 'var(--text-muted)', fontWeight: 400, fontSize: 11 }}>({formatMoney(user.orderTotalAmount)})</span>
                     </div>
                   </div>
 
-                  <div style={{ background: 'var(--primary-subtle)', padding: 10, borderRadius: 8 }}>
-                    <div style={{ fontSize: 11.5, color: 'var(--primary)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <DollarSign size={12} /> Lương Kỳ Này
+                  {/* Hàng 2: Tiền chia theo thực nhận */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-app)', padding: '6px 10px', borderRadius: 8, fontSize: 12 }}>
+                    <div style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <Wallet size={12} color="var(--primary)" /> <span>Chia theo thực nhận (%):</span>
+                    </div>
+                    <div style={{ fontWeight: 700, color: 'var(--primary)' }}>
+                      +{formatMoney(user.totalReceivedShare || 0)}
+                    </div>
+                  </div>
+
+                  {/* Hàng 3: Trừ vốn & chi phí chia đều */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-app)', padding: '6px 10px', borderRadius: 8, fontSize: 12 }}>
+                    <div style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <Tag size={12} color="#c2410c" /> <span>Trừ vốn &amp; chi phí (chia đều):</span>
+                    </div>
+                    <div style={{ fontWeight: 700, color: user.isSalaryEligible && (user.totalCostDeduction || 0) > 0 ? '#c2410c' : 'var(--text-muted)' }}>
+                      {user.isSalaryEligible ? `-${formatMoney(user.totalCostDeduction || 0)}` : '0 đ'}
+                    </div>
+                  </div>
+
+                  {/* Hàng 4: Thực lĩnh cuối cùng */}
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      background: 'var(--primary-subtle)',
+                      padding: '8px 12px',
+                      borderRadius: 8,
+                      border: '1px solid rgba(var(--primary-rgb), 0.25)',
+                      marginTop: 3
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontSize: 12, color: 'var(--primary)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <DollarSign size={13} /> Thực Lĩnh Kỳ Này
+                      </div>
+                      <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginTop: 1 }}>
+                        {user.isSalaryEligible ? 'Đã trừ chi phí chia đều' : 'Chưa tham gia'}
+                      </div>
                     </div>
                     <div
                       style={{
-                        fontSize: 16,
+                        fontSize: 16.5,
                         fontWeight: 800,
-                        color: user.totalSalary >= 0 ? 'var(--primary)' : '#e11d48',
-                        marginTop: 2
+                        color: user.totalSalary >= 0 ? 'var(--primary)' : '#e11d48'
                       }}
                     >
-                      {formatMoney(user.totalSalary)}
-                    </div>
-                    <div style={{ fontSize: 11, color: 'var(--primary)', opacity: 0.85, marginTop: 2 }}>
-                      {user.isSalaryEligible ? 'Chia theo ngày' : 'Chưa tham gia'}
+                      {user.isSalaryEligible ? formatMoney(user.totalSalary) : '0 đ'}
                     </div>
                   </div>
                 </div>
@@ -449,10 +469,10 @@ export default function SalaryManagement({ showToast }) {
           <div>
             <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
               <Calendar size={18} color="var(--primary)" />
-              <span>Nhật Ký Lợi Nhuận &amp; Tỷ Lệ Chia Lương Từng Ngày</span>
+              <span>Nhật Ký Thực Nhận &amp; Tỷ Lệ Chia Lương Từng Ngày</span>
             </h3>
             <p style={{ margin: '2px 0 0', fontSize: 12.5, color: 'var(--text-muted)' }}>
-              Xem lợi nhuận của từng ngày và bấm "Sửa tỷ lệ" để điều chỉnh tỷ lệ phần trăm theo thực tế
+              Tiền thực nhận trong ngày được chia theo tỷ lệ %. Vốn &amp; chi phí sẽ được trừ chia đều ở bảng tổng quan
             </p>
           </div>
         </div>
@@ -465,11 +485,11 @@ export default function SalaryManagement({ showToast }) {
                 <th style={{ width: 40, textAlign: 'center' }}>STT</th>
                 <th style={{ whiteSpace: 'nowrap' }}>Ngày Giao Hàng</th>
                 <th style={{ textAlign: 'center', width: 75 }}>Số Đơn</th>
-                <th>Doanh Thu</th>
-                <th>Chi Phí</th>
-                <th>Lợi Nhuận Ngày</th>
+                <th>Doanh Thu Đơn</th>
+                <th>Tiền Thực Nhận</th>
+                <th>Chi Phí Ngày</th>
                 <th>Trạng Thái Tỷ Lệ</th>
-                <th>Phân Bổ Lương Chi Tiết</th>
+                <th>Phân Bổ Theo Thực Nhận</th>
                 <th style={{ textAlign: 'center', width: 95 }}>Thao Tác</th>
               </tr>
             </thead>
@@ -502,13 +522,13 @@ export default function SalaryManagement({ showToast }) {
                       <td style={{ textAlign: 'center' }}>
                         <span className="order-qty-tag">{day.orderCount} đơn</span>
                       </td>
-                      <td><strong>{formatMoney(day.revenue)}</strong></td>
-                      <td style={{ color: 'var(--text-muted)' }}>{formatMoney(day.cost)}</td>
+                      <td style={{ color: 'var(--text-muted)' }}>{formatMoney(day.revenue)}</td>
                       <td>
-                        <strong style={{ color: day.profit >= 0 ? 'var(--status-completed-text)' : '#e11d48' }}>
-                          {formatMoney(day.profit)}
+                        <strong style={{ color: 'var(--primary)', fontSize: 13.5 }}>
+                          {formatMoney(day.actualReceived)}
                         </strong>
                       </td>
+                      <td style={{ color: '#c2410c' }}>{formatMoney(day.cost)}</td>
                       <td>
                         {day.isCustom ? (
                           <span
@@ -549,7 +569,9 @@ export default function SalaryManagement({ showToast }) {
                               <div key={a.userId} className="salary-alloc-item">
                                 <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>{a.userName}:</span>
                                 <span style={{ color: 'var(--primary)', fontWeight: 700 }}>{a.percentage}%</span>
-                                <span style={{ color: 'var(--text-muted)' }}>({formatMoney(a.salary)})</span>
+                                <span style={{ color: 'var(--text-muted)', fontWeight: 500 }}>
+                                  (+{formatMoney(a.receivedShare || a.salary)})
+                                </span>
                                 {a.notes && (
                                   <span style={{ fontSize: 10.5, color: 'var(--text-light)', fontStyle: 'italic' }}>
                                     • {a.notes}
@@ -636,25 +658,23 @@ export default function SalaryManagement({ showToast }) {
                 }}
               >
                 <div>
-                  <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>Thu</div>
-                  <strong style={{ fontSize: 12.5 }}>{formatMoney(day.revenue)}</strong>
+                  <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>Đơn đặt</div>
+                  <strong style={{ fontSize: 12, color: 'var(--text-muted)' }}>{formatMoney(day.revenue)}</strong>
                 </div>
                 <div>
-                  <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>Chi</div>
-                  <strong style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>{formatMoney(day.cost)}</strong>
+                  <div style={{ color: 'var(--primary)', fontSize: 11, fontWeight: 600 }}>Thực nhận</div>
+                  <strong style={{ fontSize: 12.5, color: 'var(--primary)' }}>{formatMoney(day.actualReceived)}</strong>
                 </div>
                 <div>
-                  <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>Lợi nhuận</div>
-                  <strong style={{ fontSize: 13, color: day.profit >= 0 ? 'var(--status-completed-text)' : '#e11d48' }}>
-                    {formatMoney(day.profit)}
-                  </strong>
+                  <div style={{ color: '#c2410c', fontSize: 11 }}>Chi phí</div>
+                  <strong style={{ fontSize: 12, color: '#c2410c' }}>{formatMoney(day.cost)}</strong>
                 </div>
               </div>
 
               {/* Split list */}
               <div style={{ marginTop: 10, paddingTop: 8, borderTop: '1px dashed var(--border-light)' }}>
                 <div style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 4 }}>
-                  Phân chia lương ({day.isCustom ? 'Đã tùy biến' : 'Mặc định'}):
+                  Phân chia theo thực nhận ({day.isCustom ? 'Đã tùy biến' : 'Mặc định'}):
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                   {day.allocations
@@ -665,7 +685,7 @@ export default function SalaryManagement({ showToast }) {
                           <strong>{a.userName}</strong> ({a.percentage}%)
                         </span>
                         <strong style={{ color: 'var(--primary)' }}>
-                          {formatMoney(a.salary)}
+                          +{formatMoney(a.receivedShare || a.salary)}
                         </strong>
                       </div>
                     ))}

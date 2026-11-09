@@ -194,33 +194,33 @@ export default function DailyAllocationModal({ isOpen, dayData, onClose, onSaved
             </div>
             <div>
               <div style={{ fontSize: 11, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                <TrendingUp size={11} /> Doanh Thu
+                <TrendingUp size={11} /> Doanh Thu Đơn
               </div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-main)', marginTop: 2 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-muted)', marginTop: 2 }}>
                 {formatMoney(dayData.revenue)}
               </div>
             </div>
             <div>
-              <div style={{ fontSize: 11, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                <Wallet size={11} /> Chi Phí
+              <div style={{ fontSize: 11, color: 'var(--primary)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <Wallet size={11} /> Tiền Thực Nhận
               </div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-muted)', marginTop: 2 }}>
-                {formatMoney(dayData.cost)}
+              <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--primary)', marginTop: 2 }}>
+                {formatMoney(dayData.actualReceived ?? dayData.revenue)}
               </div>
             </div>
             <div>
-              <div style={{ fontSize: 11, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                <DollarSign size={11} /> Lợi Nhuận
+              <div style={{ fontSize: 11, color: '#c2410c', display: 'flex', alignItems: 'center', gap: 4 }}>
+                <DollarSign size={11} /> Chi Phí Ngày
               </div>
               <div
                 style={{
-                  fontSize: 16,
-                  fontWeight: 800,
-                  color: dayData.profit >= 0 ? 'var(--status-completed-text)' : '#e11d48',
+                  fontSize: 14,
+                  fontWeight: 600,
+                  color: '#c2410c',
                   marginTop: 2
                 }}
               >
-                {formatMoney(dayData.profit)}
+                {formatMoney(dayData.cost)}
               </div>
             </div>
           </div>
@@ -228,7 +228,7 @@ export default function DailyAllocationModal({ isOpen, dayData, onClose, onSaved
           {/* Allocation Action Bar */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 13, fontWeight: 600 }}>Phân Bổ Tỷ Lệ:</span>
+              <span style={{ fontSize: 13, fontWeight: 600 }}>Phân Bổ Tỷ Lệ (Theo Thực Nhận):</span>
               <button
                 type="button"
                 className="btn btn-secondary btn-sm"
@@ -264,8 +264,9 @@ export default function DailyAllocationModal({ isOpen, dayData, onClose, onSaved
           {/* Allocation List */}
           <div className="daily-allocation-list" style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 350, overflowY: 'auto' }}>
             {allocations.map((a, idx) => {
+              const baseReceived = dayData.actualReceived ?? dayData.revenue ?? 0;
               const estimatedSalary = a.isParticipating
-                ? Math.round(dayData.profit * ((parseFloat(a.percentage) || 0) / 100))
+                ? Math.round(baseReceived * ((parseFloat(a.percentage) || 0) / 100))
                 : 0;
 
               return (
@@ -328,21 +329,21 @@ export default function DailyAllocationModal({ isOpen, dayData, onClose, onSaved
                             borderRadius: 6,
                             border: '1px solid var(--border-color)',
                             background: a.isParticipating ? 'var(--bg-elevated)' : 'var(--bg-app)',
-                            fontSize: 14
+                            fontSize: 16
                           }}
                         />
                         <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)' }}>%</span>
                       </div>
 
-                      <div style={{ minWidth: 100, textAlign: 'right' }}>
-                        <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Tiền nhận</div>
+                      <div style={{ minWidth: 110, textAlign: 'right' }}>
+                        <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Thực nhận chia</div>
                         <strong
                           style={{
                             fontSize: 13.5,
-                            color: estimatedSalary >= 0 ? 'var(--status-completed-text)' : '#e11d48'
+                            color: 'var(--primary)'
                           }}
                         >
-                          {a.isParticipating ? formatMoney(estimatedSalary) : '0 đ'}
+                          {a.isParticipating ? `+${formatMoney(estimatedSalary)}` : '0 đ'}
                         </strong>
                       </div>
                     </div>
@@ -358,7 +359,7 @@ export default function DailyAllocationModal({ isOpen, dayData, onClose, onSaved
                         onChange={e => handleNotesChange(idx, e.target.value)}
                         style={{
                           width: '100%',
-                          fontSize: 12,
+                          fontSize: 16,
                           padding: '4px 8px',
                           borderRadius: 6,
                           border: '1px solid var(--border-light)',
@@ -370,6 +371,27 @@ export default function DailyAllocationModal({ isOpen, dayData, onClose, onSaved
                 </div>
               );
             })}
+          </div>
+
+          {/* Transparent Notice Note */}
+          <div
+            style={{
+              marginTop: 12,
+              padding: '9px 12px',
+              background: 'var(--bg-app)',
+              borderRadius: 8,
+              border: '1px solid var(--border-light)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              fontSize: 12,
+              color: 'var(--text-muted)'
+            }}
+          >
+            <Info size={14} color="var(--primary)" style={{ flexShrink: 0 }} />
+            <span>
+              Tỷ lệ % được tính trực tiếp trên <strong>Tiền thực nhận</strong> trong ngày. Vốn và chi phí sẽ được gom chia đều ở bảng tổng kết kỳ theo quy định.
+            </span>
           </div>
         </div>
 

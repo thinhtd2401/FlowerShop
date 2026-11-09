@@ -5868,7 +5868,7 @@ svg.icon-svg {
 /* KPI Summary Grid */
 .salary-kpi-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 12px;
   width: 100%;
   box-sizing: border-box;
@@ -6007,7 +6007,7 @@ svg.icon-svg {
   }
 
   .salary-kpi-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important;
     gap: 12px !important;
   }
 
